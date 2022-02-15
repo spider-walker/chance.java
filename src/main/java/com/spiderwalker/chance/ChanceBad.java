@@ -51,28 +51,6 @@ public class ChanceBad{
 
 
 //     /**
-//      * Determine whether a given number is prime or not.
-//      */
-//     Chance.prototype.is_prime = function (n) {
-//         if (n % 1 || n < 2) {
-//             return false;
-//         }
-//         if (n % 2 === 0) {
-//             return n === 2;
-//         }
-//         if (n % 3 === 0) {
-//             return n === 3;
-//         }
-//         var m = Math.sqrt(n);
-//         for (var i = 5; i <= m; i += 6) {
-//             if (n % i === 0 || n % (i + 2) === 0) {
-//                 return false;
-//             }
-//         }
-//         return true;
-//     };
-
-//     /**
 //      *  Return a random hex number as string
 //      *
 //      *  NOTE the max and min are INCLUDED in the range. So:

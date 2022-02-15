@@ -206,7 +206,7 @@ public class Chance {
      */
     public float floating(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        float max= (float) Math.pow(2, 18);
+        float max = (float) Math.pow(2, 18);
         defaults.put("fixed", 4);
         defaults.put("min", -max);
         defaults.put("max", max);
@@ -214,27 +214,23 @@ public class Chance {
 
         int fixed = (int) options.get("fixed");
         float min = (float) options.get("min");
-          max = (float) options.get("max");
-
-        
+        max = (float) options.get("max");
 
         float random = min + rand.nextFloat() * (max - min);
-        
-        return  Float.parseFloat(String.format("%." + fixed + "f", random));
+
+        return Float.parseFloat(String.format("%." + fixed + "f", random));
     }
 
-    
-
     /**
-     *  Return a random prime number
+     * Return a random prime number
      *
-     *  NOTE the max and min are INCLUDED in the range.
+     * NOTE the max and min are INCLUDED in the range.
      *
-     *  @param {Object} [options={}] can specify a min and/or max
-     *  @returns {Number} a single random prime number
-     *  @throws {RangeError} min cannot be greater than max nor negative
+     * @param {Object} [options={}] can specify a min and/or max
+     * @returns {Number} a single random prime number
+     * @throws {RangeError} min cannot be greater than max nor negative
      */
-    public int prime (Map<String, Object> options) {
+    public int prime(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("min", 0);
         defaults.put("max", 10000);
@@ -244,10 +240,10 @@ public class Chance {
         testRange(min < 0, "Chance: Min cannot be less than zero.");
         testRange(min > max, "Chance: Min cannot be greater than Max.");
 
-        List<Integer> primes= new ArrayList<>((List<Integer>) data.get("primes")); 
-        
-        Integer lastPrime =(int) Math.round(10.0); 
-        
+        List<Integer> primes = new ArrayList<>((List<Integer>) data.get("primes"));
+
+        Integer lastPrime = (int) Math.round(10.0);
+
         if (max > lastPrime) {
             for (Integer i = lastPrime + 2; i <= max; ++i) {
                 if (isPrime(i)) {
@@ -256,42 +252,59 @@ public class Chance {
             }
         }
 
-        List<Integer> targetPrimes=primes.stream().filter(prime->{
+        List<Integer> targetPrimes = primes.stream().filter(prime -> {
             System.out.println(prime);
-            return prime >= min  && prime <= max;
+            return prime >= min && prime <= max;
         }).collect(Collectors.toList());
         return (int) pickone(targetPrimes);
     };
 
-        /**
+     public String letter (Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("casing", "lower");
+        String pool = "abcdefghijklmnopqrstuvwxyz";
+        
+        options = initOptions(options, defaults);
+        Map<String, Object> defaultsCharacter = new HashMap<>();
+        defaults.put("pool", pool);
+        String letter = String.valueOf(defaultsCharacter);
+        if (options.get("casing") == "upper") {
+            letter = letter.toUpperCase();
+        }
+        return letter;
+    }
+    /**
      * Determine whether a given number is prime or not.
      */
-    public boolean isPrime (double i2) {
+    public boolean isPrime(double i2) {
         testRange(i2 <= 1, "Only positive numbers above 1 can be prime.");
         double limit = Math.sqrt(i2);
-    
+
         for (int i = 2; i <= limit; i++) {
             if (i2 % i == 0) {
                 return false;
             }
         }
-    
+
         return true;
     };
 
+    public String letter() {
+        return null;
+    }
 
     /**
-    * Return a random natural
-    *
-    * NOTE the max and min are INCLUDED in the range. So:
-    * chance.natural({min: 1, max: 3});
-    * would return either 1, 2, or 3.
-    *
-    * @param {Object} [options={}] can specify a min and/or max or a numerals
-    count.
-    * @returns {Number} a single random integer number
-    * @throws {RangeError} min cannot be greater than max
-    */
+     * Return a random natural
+     *
+     * NOTE the max and min are INCLUDED in the range. So:
+     * chance.natural({min: 1, max: 3});
+     * would return either 1, 2, or 3.
+     *
+     * @param {Object} [options={}] can specify a min and/or max or a numerals
+     *                 count.
+     * @returns {Number} a single random integer number
+     * @throws {RangeError} min cannot be greater than max
+     */
 
     boolean isNumeric(Object object) {
         return String.valueOf(object).chars().allMatch(Character::isDigit);

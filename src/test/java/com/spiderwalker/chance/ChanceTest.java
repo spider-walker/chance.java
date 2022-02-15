@@ -216,8 +216,8 @@ public class ChanceTest {
 
         Map<String, Object> options1 = new HashMap<>();
         options1.put("fixed", 4);
-        float result= chance.floating(options1); 
- 
+        float result = chance.floating(options1);
+
     }
 
     @Test
@@ -237,5 +237,15 @@ public class ChanceTest {
         });
         Map<String, Object> options2 = new HashMap<>();
         System.out.println(chance.prime(options2));
-}
+    }
+
+    @Test
+    public void shouldReturnRandomLetter(){
+        Chance chance = new Chance();
+
+        Map<String, Object> options = new HashMap<>();
+        System.out.println(chance.letter(options));
+
+    }
+
 }
