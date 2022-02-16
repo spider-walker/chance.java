@@ -40,9 +40,7 @@ public class ChanceTest {
         Map<String, Object> options = new HashMap<>();
         options.put("likelihood", 30);
         Chance chance = new Chance();
-        Supplier<Object> func = () -> {
-            return chance.bool(options);
-        };
+        Supplier<Object> func = () -> chance.bool(options);
         List<Object> list = chance.range(func, 6);
         assertEquals(6, list.size());
     }
@@ -75,9 +73,7 @@ public class ChanceTest {
         Map<String, Object> options = new HashMap<>();
         options.put("likelihood", 130);
         Chance chance = new Chance();
-        Supplier<Object> func = () -> {
-            return chance.bool(options);
-        };
+        Supplier<Object> func = () -> chance.bool(options);
         assertThrows(RangeError.class, () -> {
             chance.range(func, 6);
         });
@@ -89,7 +85,7 @@ public class ChanceTest {
         Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
         String[] arr = { "desert", "forest", "ocean", "zoo", "farm", "pet", "grassland" };
-        String o = (String) chance.pickone(Arrays.asList(arr));
+          assertNotNull( chance.pickone(Arrays.asList(arr)));
 
     }
 
@@ -104,9 +100,7 @@ public class ChanceTest {
         Map<String, Object> options = new HashMap<>();
         options.put("likelihood", 130);
         Chance chance = new Chance();
-        Supplier<Object> func = () -> {
-            return chance.natural(new HashMap<>());
-        };
+        Supplier<Object> func = () -> chance.natural(new HashMap<>());
         List<Integer> list = (List<Integer>) chance.n(func, 10);
         assertTrue(10 == list.size());
 
@@ -202,10 +196,9 @@ public class ChanceTest {
 
         Map<String, Object> options = new HashMap<>();
         options.put("casing", "lower");
-
-        assertTrue(Constants.CHARS_LOWER.contains(String.valueOf(chance.character(options))));
+        assertTrue((Constants.CHARS_LOWER+Constants.NUMBERS+Constants.SYMBOLS).contains(String.valueOf(chance.character(options))));
         options.put("casing", "upper");
-        assertTrue(Constants.CHARS_UPPER.contains(String.valueOf(chance.character(options))));
+        assertTrue((Constants.CHARS_UPPER+Constants.NUMBERS+Constants.SYMBOLS).contains(String.valueOf(chance.character(options))));
         options.put("numeric", "upper");
         assertTrue(Constants.NUMBERS.contains(String.valueOf(chance.character(options))));
     }
@@ -235,8 +228,6 @@ public class ChanceTest {
         assertThrows(RangeError.class, () -> {
             chance.prime(options);
         });
-        Map<String, Object> options2 = new HashMap<>();
-        System.out.println(chance.prime(options2));
     }
 
     @Test
@@ -244,8 +235,49 @@ public class ChanceTest {
         Chance chance = new Chance();
 
         Map<String, Object> options = new HashMap<>();
-        System.out.println(chance.letter(options));
+        assertNotNull(chance.letter(options));
 
+    }
+
+    @Test
+    public void shouldReturnaRandomHexNumberAsString(){
+        Chance chance = new Chance();
+
+        Map<String, Object> options = new HashMap<>();
+        options.put("min", 10000);
+        options.put("max", 5);
+        assertThrows(RangeError.class, () -> {
+            chance.hex(options);
+        });
+        options.put("max", 500000);
+        System.out.println(chance.hex(options));
+        assertNotNull(chance.hex(options));
+
+    }
+
+    @Test
+    public void shouldReturnRandomString(){
+        Chance chance = new Chance();
+
+        Map<String, Object> options = new HashMap<>();
+        options.put("length", -2);
+        assertThrows(RangeError.class, () -> {
+            chance.string(options);
+        });
+        options.put("length", 6);
+        assertEquals(6,chance.string(options).length());
+    }
+
+    @Test
+    public void shouldIsraelId(){
+        Chance chance = new Chance();
+        assertEquals(23,chance.israelId().length());
+    }
+
+    @Test
+    public void shouldReturnmrz(){
+        Chance chance = new Chance();
+        assertEquals(23,chance.israelId().length());
     }
 
 }
