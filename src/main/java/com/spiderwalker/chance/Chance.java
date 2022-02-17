@@ -5,16 +5,15 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -314,7 +313,6 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("min", 5);
         defaults.put("max", 20);
-        defaults.put("max", 20);
         options = initOptions(options, defaults);
 
         if (options.get("length") == null) {
@@ -424,6 +422,10 @@ public class Chance {
 
     public int random(int min, int max) {
         return rand.nextInt(max - min) + min;
+    }
+
+    public long random(long min, long max) {
+        return rand.nextInt((int) (max - min)) + min;
     }
 
     /**
@@ -651,81 +653,398 @@ public class Chance {
     }
 
 
+    public int age(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("type", "");
+        options = initOptions(options, defaults);
+        int ageRange = 0;
+        String type = (String) options.get("type");
+        switch (type) {
+            case "child":
+                ageRange = random(0, 12);
+                break;
+            case "teen":
+                ageRange = random(13, 19);
+                break;
+            case "adult":
+                ageRange = random(18, 65);
+                break;
+            case "senior":
+                ageRange = random(65, 100);
+                break;
+            case "all":
+                ageRange = random(0, 100);
+                break;
+            default:
+                ageRange = random(18, 65);
+                break;
+        }
 
-     public String mrz (Map<String, Object> options) {
-         var checkDigit = ()-> (input) {
-             var alpha = "<ABCDEFGHIJKLMNOPQRSTUVWXYXZ".split(""),
-                 multipliers = [ 7, 3, 1 ],
-                 runningTotal = 0;
+        return (ageRange);
+    }
 
-             if (typeof input !== 'string') {
-                 input = input.toString();
+    ;
+
+    public Object month(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("min", 1);
+        defaults.put("max", 2);
+        options = initOptions(options, defaults);
+
+        testRange((int) options.get("min") < 1, "Chance: Min cannot be less than 1.");
+        testRange((int) options.get("max") > 12, "Chance: Max cannot be greater than 12.");
+        testRange((int) options.get("min") > (int) options.get("max"), "Chance: Min cannot be greater than Max.");
+
+        Map<String, Object> month = (Map) pickone(months().subList((int) options.get("min") - 1, (int) options.get("max")));
+        return options.get("raw") != null ? month : (String) month.get("name");
+    }
+
+    public ArrayList<HashMap<String, Object>> months() {
+        return (ArrayList<HashMap<String, Object>>) data.get("months");
+    }
+
+    public int second() {
+        return random(0, 59);
+    }
+
+    ;
+
+    public int minute(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("min", 0);
+        defaults.put("max", 59);
+        options = initOptions(options, defaults);
+        int min = (int) options.get("min");
+        int max = (int) options.get("min");
+        testRange(min < 1, "Chance: Min cannot be less than 1.");
+        testRange(max > 12, "Chance: Max cannot be greater than 12.");
+        testRange(min > max, "Chance: Min cannot be greater than Max.");
+
+        return random(min, max);
+    }
+
+    // Guid
+    public String guid() {
+        return UUID.randomUUID().toString();
+    }
+
+    // Coin - Flip, flip, flipadelphia
+    public String coin() {
+        return bool(new HashMap<>()) ? "heads" : "tails";
+    }
+
+    public String capitalize(String word) {
+        return word.substring(0, 1).toUpperCase() + word.substring(1);
+    }
+    public String capitalizeEach(String words) {
+        return Stream.of(words.trim().split("\\s"))
+                .filter(word -> word.length() > 0)
+                .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1))
+                .collect(Collectors.joining(" "));
+    }
+
+
+    // Could get smarter about this than generating random words and
+    // chaining them together. Such as: http://vq.io/1a5ceOh
+    public String sentence(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("min", random(3, 7));
+        defaults.put("words",random(12,18));
+        defaults.put("punctuation",random(12,18));
+        options = initOptions(options,defaults);
+
+        int count = (int) options.get("words");
+       boolean punctuation = (boolean) options.get("punctuation");
+        Map<String, Object> finalOptions = options;
+        Supplier<String> wordFn = () -> word(finalOptions);
+       String text= null;
+        List<String>   word_array = (List<String>) n(wordFn, count);
+
+        text = String.join(" ",word_array);
+        String punctuate = "";
+
+        // Capitalize first letter of sentence
+        text = capitalize(text);
+        Pattern pattern = Pattern.compile("^[.?;!:]$");
+
+        // Search above pattern in "softwareTestingHelp.com"
+        Matcher m = pattern.matcher("softwareTestingHelp.com");
+
+        // Make sure punctuation has a usable value
+        if (punctuation != false && m.find()){
+            punctuate = ".";
+        }
+
+        // Add punctuation mark
+        if (punctuation) {
+            text += punctuate;
+        }
+
+        return text;
+    }
+    public String word (Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+         options = initOptions(options,defaults);
+
+         testRange(
+                 options.get("syllables")!=null && options.get("length")!=null,
+             "Chance: Cannot specify both syllables AND length."
+         );
+
+         int syllables = options.syllables || random(1, 3),
+             text = '';
+
+         if (options.length) {
+             // Either bound word by length
+             do {
+                 text += this.syllable();
+             } while (text.length < options.length);
+             text = text.substring(0, options.length);
+         } else {
+             // Or by number of syllables
+             for (var i = 0; i < syllables; i++) {
+                 text += this.syllable();
              }
+         }
 
-             input.split('').forEach(function(character, idx) {
-                 var pos = alpha.indexOf(character);
+         if (options.capitalize) {
+             text = this.capitalize(text);
+         }
 
-                 if(pos !== -1) {
-                     character = pos === 0 ? 0 : pos + 9;
-                 } else {
-                     character = parseInt(character, 10);
-                 }
-                 character *= multipliers[idx % multipliers.length];
-                 runningTotal += character;
-             });
-             return runningTotal % 10;
-         };
-         var generate = function (opts) {
-             var pad = function (length) {
-                 return new Array(length + 1).join('<');
-             };
-             var number = [ 'P<',
-                            opts.issuer,
-                            opts.last.toUpperCase(),
-                            '<<',
-                            opts.first.toUpperCase(),
-                            pad(39 - (opts.last.length + opts.first.length + 2)),
-                            opts.passportNumber,
-                            checkDigit(opts.passportNumber),
-                            opts.nationality,
-                            opts.dob,
-                            checkDigit(opts.dob),
-                            opts.gender,
-                            opts.expiry,
-                            checkDigit(opts.expiry),
-                            pad(14),
-                            checkDigit(pad(14)) ].join('');
+         return text;
+     }
 
-             return number +
-                 (checkDigit(number.substr(44, 10) +
-                             number.substr(57, 7) +
-                             number.substr(65, 7)));
-         };
 
-         var that = this;
+    public String paragraph(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("sentences", random(3, 7));
+        defaults.put("linebreak",true);
+        options = initOptions(options, defaults);
 
-         options = initOptions(options, {
-             first: this.first(),
-             last: this.last(),
-             passportNumber: this.integer({min: 100000000, max: 999999999}),
-             dob: (function () {
-                 var date = that.birthday({type: 'adult'});
-                 return [date.getFullYear().toString().substr(2),
-                         that.pad(date.getMonth() + 1, 2),
-                         that.pad(date.getDate(), 2)].join('');
-             }()),
-             expiry: (function () {
-                 var date = new Date();
-                 return [(date.getFullYear() + 5).toString().substr(2),
-                         that.pad(date.getMonth() + 1, 2),
-                         that.pad(date.getDate(), 2)].join('');
-             }()),
-             gender: this.gender() === 'Female' ? 'F': 'M',
-             issuer: 'GBR',
-             nationality: 'GBR'
-         });
-         return generate (options);
-     };
+        int count = (int) options.get("sentences");
+        Map<String, Object> finalOptions = options;
+        Supplier<String> sentenceFn = () -> sentence(finalOptions);
+
+        List<String> sentence_array = (List<String>) n(sentenceFn, count);
+                String separator = (boolean) options.get("linebreak")  ? "\n" : " ";
+
+        return String.join(separator, sentence_array);
+    }
+
+    public int hour(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        boolean twentyfour = options.get("twentyfour") != null && (boolean) options.get("twentyfour");
+        defaults.put("min", twentyfour ? 0 : 1);
+        defaults.put("max", twentyfour ? 23 : 12);
+        options = initOptions(options, defaults);
+        int min = (int) options.get("min");
+        int max = (int) options.get("min");
+
+        testRange(min < 0, "Chance: Min cannot be less than 0.");
+        testRange(twentyfour && max > 23, "Chance: Max cannot be greater than 23 for twentyfour option.");
+        testRange(!twentyfour && max > 12, "Chance: Max cannot be greater than 12.");
+        testRange(min > max, "Chance: Min cannot be greater than Max.");
+
+        return random(min, max);
+    }
+
+    public long timestamp(Map<String, Object> options) {
+        int min = (int) options.get("min");
+        int max = (int) (new Date().getTime() / 1000);
+        return random(min, max);
+    }
+
+    public String weekday(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("weekday_only", false);
+        options = initOptions(options, defaults);
+        List weekdays = Arrays.asList("Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
+        if (!(boolean) options.get("month")) {
+            weekdays.add("Saturday");
+            weekdays.add("Sunday");
+        }
+        return (String) pickone(weekdays);
+    }
+
+    public String year(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("min", LocalDateTime.now().getYear());
+        // Default to current year as min if none specified
+        options = initOptions(options, defaults);
+
+        // Default to one century after current year as max if none specified
+        int max = options.get("month") != null ? (int) options.get("max") : (int) options.get("min") + 100;
+
+        return String.valueOf(random((int) options.get("min"), max));
+    }
+
+    ;
+
+    public Object date(Map<String, Object> options) {
+        String date_string = "";
+        LocalDateTime date;
+        Map<String, Object> defaults = new HashMap<>();
+        // If interval is specified we ignore preset
+        if (options != null && (options.get("min") != null || options.get("max") != null)) {
+            defaults.put("american", true);
+            defaults.put("string", false);
+            options = initOptions(options, defaults);
+            long min = options.get("min") != null ? ((Date) options.get("min")).getTime() : 1;
+            long max = options.get("max") != null ? ((Date) options.get("min")).getTime() : 8640000000000000l;
+
+            date = LocalDateTime.ofInstant(Instant.ofEpochSecond(random(min, max)), ZoneOffset.UTC);
+        } else {
+            defaults.put("raw", true);
+            Map<String, Object> m = (Map) month(defaults);
+            int daysInMonth = Integer.parseInt(String.valueOf(m.get("days")));
+
+            if (options != null && options.get("month") != null) {
+                // Mod 12 to allow months outside range of 0-11 (not encouraged, but also not prevented).
+                m = months().get((((int) options.get("month") % 12) + 12) % 12);
+                daysInMonth = Integer.parseInt(String.valueOf(m.get("days")));
+            }
+            defaults.put("year", Integer.parseInt(year(options), 10));
+            defaults.put("month", Integer.parseInt(String.valueOf(m.get("numeric"))) - 1);
+            defaults.put("day", random(1, daysInMonth));
+            Map<String, Object> hourOptions = new HashMap<>();
+            hourOptions.put("twentyfour", true);
+            defaults.put("hour", hour(hourOptions));
+            defaults.put("minute", minute(hourOptions));
+            defaults.put("second", random(1, daysInMonth));
+            defaults.put("millisecond", random(1, daysInMonth));
+            defaults.put("american", true);
+            defaults.put("string", false);
+
+            options = initOptions(options, defaults);
+
+            date = LocalDateTime.of(
+                    (int) options.get("year"),
+                    (int) options.get("month"),
+                    (int) options.get("day"),
+                    (int) options.get("hour"),
+                    (int) options.get("minute"),
+                    (int) options.get("second"),
+                    (int) options.get("millisecond")
+            );
+        }
+
+        if (options.get("american") != null) {
+            // Adding 1 to the month is necessary because Date() 0-indexes
+            // months but not day for some odd reason.
+            date_string = (date.getMonthValue() + 1) + "/" + date.getDayOfMonth() + "/" + date.getYear();
+        } else {
+            date_string = date.getDayOfMonth() + "/" + (date.getDayOfMonth() + 1) + "/" + date.getYear();
+        }
+
+        return options.get("string") != null ? date_string : date;
+    }
+
+    ;
+
+
+//    public OffsetDateTime birthday  (Map<String, Object> options) {
+//         var age = age(options);
+//         int currentYear = OffsetDateTime.now().getYear();
+//        String type = (String) options.get("type");
+//        Map<String, Object> defaults= new HashMap<>();
+//        if (type!=null) {
+//             var min = new Date();
+//             var max = new Date();
+//             min.setYear(currentYear - age - 1);
+//             max.setYear(currentYear - age);
+//             defaults.put("min",min);
+//             defaults.put("max",max);
+//
+//
+//             options = initOptions(options, defaults);
+//         } else {
+//            defaults.put("year",currentYear - age);
+//             options = initOptions(options,defaults);
+//         }
+//
+//         return date(options);
+//     }
+//    public String mrz(Map<String, Object> options) {
+//        Function<String, Integer> checkDigit = input -> {
+//
+//            String[] alpha = "<ABCDEFGHIJKLMNOPQRSTUVWXYXZ".split("");
+//            int[] multipliers = {7, 3, 1};
+//            int runningTotal = 0;
+//            int character = 0;
+//            int idx = 0;
+//            for (String in : input.split("")) {
+//                int pos = Arrays.binarySearch(alpha, in);
+//                System.out.println(pos);
+//
+//                if (pos != -1) {
+//                    character = pos == 0 ? 0 : pos + 9;
+//                } else {
+//                    character = Character.getNumericValue(Integer.parseInt(in));
+//                }
+//                character *= multipliers[idx % multipliers.length];
+//                runningTotal += character;
+//                idx++;
+//            }
+//
+//            return runningTotal % 10;
+//        };
+//
+//
+//        Function<Map<String, Object>, String> generate = (opts) -> {
+//
+//            Function<Integer, String> pad = (length) -> String.join("", String.valueOf(length + 1), "<");
+//
+//            String number = String.join("", "P<",
+//                    opts.get("issuer"),
+//                    opts.get("last").toString().toUpperCase(),
+//                    "<<",
+//                    opts.get("first").toString().toUpperCase(),
+//                    pad.apply(39 - (opts.get("last").toString().length() + opts.get("first").length() + 2)),
+//                    opts.get("passportNumber"),
+//                    String.valueOf(checkDigit.apply(opts.get("passportNumber").toString())),
+//                    opts.get("nationality"),
+//                    opts.get("dob"),
+//                    String.valueOf(checkDigit.apply(opts.get("dob").toString())),
+//                    opts.get("gender"),
+//                    opts.get("expiry"),
+//                    String.valueOf(checkDigit.apply(opts.get("expiry").toString())),
+//                    pad.apply(14),
+//                    String.valueOf(checkDigit.apply(pad.apply(14))));
+//            return Integer.valueOf(number +
+//                    (checkDigit.apply(number.substring(44, 10) +
+//                            number.substring(57, 7) +
+//                            number.substring(65, 7))));
+//        };
+//        Supplier dob =  ()-> {
+//            Map<String, Object> birthdayOptions= new HashMap<>();
+//            birthdayOptions.put("type","adult");
+//            OffsetDateTime date = birthday(birthdayOptions);
+//            return String.join("",String.valueOf(date.getYear()).substring(0,2),
+//                     pad(date.getMonthValue() + 1, 2,"0"),
+//                    pad(date.toString(), 2,"0"));
+//        };
+//
+//        Supplier expiry =  ()-> {
+//            OffsetDateTime date = OffsetDateTime.now();
+//            return String.join("",
+//                    String.valueOf(date.getYear() + 5).substring(0,2),
+//            pad(date.getMonthValue()+ 1, 2,""),
+//                    pad(date.toString(), 2,"0"));
+//        };
+//         var that = this;
+//         Map<String, Object> defaults= new HashMap<>();
+//         defaults.put("first", first());
+//                 defaults.put("last",  last());
+//                         defaults.put("passportNumber", random(100000000, 999999999));
+//                                 defaults.put("dob", dob.get());
+//                                         defaults.put("expiry",expiry.get ());
+//        defaults.put("gender", gender() =="Female" ? "F": "M");
+//        defaults.put("issuer", "GBR");
+//                defaults.put("nationality", "GBR");
+//
+//         options = initOptions(options,defaults);
+//         return generate .apply(options);
+//    }
 
 //     public String name (Map<String, Object> options) {
 //         options = initOptions(options);

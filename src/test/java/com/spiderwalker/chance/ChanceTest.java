@@ -84,8 +84,8 @@ public class ChanceTest {
     public void shouldGiveOne() {
         Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
-        String[] arr = { "desert", "forest", "ocean", "zoo", "farm", "pet", "grassland" };
-          assertNotNull( chance.pickone(Arrays.asList(arr)));
+        String[] arr = {"desert", "forest", "ocean", "zoo", "farm", "pet", "grassland"};
+        assertNotNull(chance.pickone(Arrays.asList(arr)));
 
     }
 
@@ -130,16 +130,16 @@ public class ChanceTest {
         assertThrows(RangeError.class, () -> {
             chance.pickset(array1, 4);
         });
-        Object[] array2 = { 1, 4, 5 };
+        Object[] array2 = {1, 4, 5};
 
         assertThrows(RangeError.class, () -> {
             chance.pickset(array2, -4);
         });
-        Object[] array3 = { 1, 4, 5 };
+        Object[] array3 = {1, 4, 5};
 
         assertEquals(1, chance.pickset(array3, 1).length);
 
-        Object[] array4 = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 12, 13, 14 };
+        Object[] array4 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 12, 13, 14};
         assertEquals(5, chance.pickset(array4, 5).length);
     }
 
@@ -149,11 +149,11 @@ public class ChanceTest {
         Chance chance = new Chance();
         assertEquals(0, chance.shuffle(array1).length);
 
-        Object[] array3 = { 1, 4, 5 };
+        Object[] array3 = {1, 4, 5};
 
         assertEquals(3, chance.shuffle(array3).length);
 
-        Object[] array4 = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 12, 13, 14 };
+        Object[] array4 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 12, 13, 14};
         assertEquals(14, chance.shuffle(array4).length);
     }
 
@@ -161,15 +161,15 @@ public class ChanceTest {
     public void shouldReturnSingleItem() {
         Chance chance = new Chance();
 
-        Object[] array1 = { 1, 4, 5 };
-        int[] weights1 = { 1, 4 };
+        Object[] array1 = {1, 4, 5};
+        int[] weights1 = {1, 4};
 
         assertThrows(RangeError.class, () -> {
             chance.weighted(array1, weights1, true);
         });
 
-        Object[] array2 = { 1, 4, 5, 8, 5, 6 };
-        int[] weights2 = { 1, 1, 1, 1, 1, 2 };
+        Object[] array2 = {1, 4, 5, 8, 5, 6};
+        int[] weights2 = {1, 1, 1, 1, 1, 2};
 
         assertNotNull(chance.weighted(array2, weights2, true));
     }
@@ -196,9 +196,9 @@ public class ChanceTest {
 
         Map<String, Object> options = new HashMap<>();
         options.put("casing", "lower");
-        assertTrue((Constants.CHARS_LOWER+Constants.NUMBERS+Constants.SYMBOLS).contains(String.valueOf(chance.character(options))));
+        assertTrue((Constants.CHARS_LOWER + Constants.NUMBERS + Constants.SYMBOLS).contains(String.valueOf(chance.character(options))));
         options.put("casing", "upper");
-        assertTrue((Constants.CHARS_UPPER+Constants.NUMBERS+Constants.SYMBOLS).contains(String.valueOf(chance.character(options))));
+        assertTrue((Constants.CHARS_UPPER + Constants.NUMBERS + Constants.SYMBOLS).contains(String.valueOf(chance.character(options))));
         options.put("numeric", "upper");
         assertTrue(Constants.NUMBERS.contains(String.valueOf(chance.character(options))));
     }
@@ -231,7 +231,7 @@ public class ChanceTest {
     }
 
     @Test
-    public void shouldReturnRandomLetter(){
+    public void shouldReturnRandomLetter() {
         Chance chance = new Chance();
 
         Map<String, Object> options = new HashMap<>();
@@ -240,7 +240,7 @@ public class ChanceTest {
     }
 
     @Test
-    public void shouldReturnaRandomHexNumberAsString(){
+    public void shouldReturnaRandomHexNumberAsString() {
         Chance chance = new Chance();
 
         Map<String, Object> options = new HashMap<>();
@@ -256,7 +256,7 @@ public class ChanceTest {
     }
 
     @Test
-    public void shouldReturnRandomString(){
+    public void shouldReturnRandomString() {
         Chance chance = new Chance();
 
         Map<String, Object> options = new HashMap<>();
@@ -265,19 +265,87 @@ public class ChanceTest {
             chance.string(options);
         });
         options.put("length", 6);
-        assertEquals(6,chance.string(options).length());
+        assertEquals(6, chance.string(options).length());
     }
 
     @Test
-    public void shouldIsraelId(){
+    public void shouldIsraelId() {
         Chance chance = new Chance();
-        assertEquals(23,chance.israelId().length());
+        assertEquals(23, chance.israelId().length());
     }
 
     @Test
-    public void shouldReturnmrz(){
+    public void shouldReturnMonths() {
+        Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
-        assertEquals(23,chance.israelId().length());
+        assertEquals(12, chance.months().size());
+    }
+
+    @Test
+    public void shouldReturnAge() {
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = new Chance();
+        int age = chance.age(options);
+        assertTrue(age > 18 && age < 65);
+
+        options.put("type", "child");
+        age = chance.age(options);
+        assertTrue(age > 0 && age < 22);
+
+        options.put("type", "teen");
+        age = chance.age(options);
+        assertTrue(age > 13 && age < 19);
+    }
+
+    @Test
+    public void shouldReturnMonth() {
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = new Chance();
+        assertThrows(RangeError.class, () -> {
+            options.put("min", -1);
+            chance.month(options);
+        });
+        assertThrows(RangeError.class, () -> {
+            options.put("min", 6);
+            options.put("max", 14);
+            chance.month(options);
+        });
+        assertThrows(RangeError.class, () -> {
+            options.put("min", 6);
+            options.put("max", 3);
+            chance.month(options);
+        });
+        options.put("min", 3);
+        options.put("max", 4);
+        assertEquals("March", chance.month(options));
+
+        options.put("raw", true);
+        Map<String, Object> map = new HashMap();
+        map.put("name", "March");
+        map.put("short_name", "Mar");
+        map.put("numeric", "03");
+        map.put("days", 31.0);
+        assertEquals(map, (chance.month(options)));
+    }
+
+    @Test
+    public void shouldReturnmrz() {
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = new Chance();
+        //assertEquals(23,chance.mrz(options).length());
+    }
+
+    @Test
+    public void shouldReturnDate() {
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = new Chance();
+        assertEquals("", chance.date(options));
+    }
+
+    @Test
+    public void shouldCapitalize() {
+        Chance chance = new Chance();
+        assertEquals("Milk Way", chance.capitalize("Milk way"));
     }
 
 }

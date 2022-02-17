@@ -179,9 +179,6 @@ public class ChanceBad{
 
 //     // -- Helpers --
 
-//     Chance.prototype.capitalize = function (word) {
-//         return word.charAt(0).toUpperCase() + word.substr(1);
-//     };
 
 //     Chance.prototype.mixin = function (obj) {
 //         for (var func_name in obj) {
@@ -237,42 +234,6 @@ public class ChanceBad{
 
 //     // -- Text --
 
-//     Chance.prototype.paragraph = function (options) {
-//         options = initOptions(options);
-
-//         var sentences = options.sentences || this.natural({min: 3, max: 7}),
-//             sentence_array = this.n(this.sentence, sentences),
-//             separator = options.linebreak === true ? '\n' : ' ';
-
-//         return sentence_array.join(separator);
-//     };
-
-//     // Could get smarter about this than generating random words and
-//     // chaining them together. Such as: http://vq.io/1a5ceOh
-//     Chance.prototype.sentence = function (options) {
-//         options = initOptions(options);
-
-//         var words = options.words || this.natural({min: 12, max: 18}),
-//             punctuation = options.punctuation,
-//             text, word_array = this.n(this.word, words);
-
-//         text = word_array.join(' ');
-
-//         // Capitalize first letter of sentence
-//         text = this.capitalize(text);
-
-//         // Make sure punctuation has a usable value
-//         if (punctuation !== false && !/^[.?;!:]$/.test(punctuation)) {
-//             punctuation = '.';
-//         }
-
-//         // Add punctuation mark
-//         if (punctuation) {
-//             text += punctuation;
-//         }
-
-//         return text;
-//     };
 
 //     Chance.prototype.syllable = function (options) {
 //         options = initOptions(options);
@@ -308,91 +269,12 @@ public class ChanceBad{
 //         return text;
 //     };
 
-//     Chance.prototype.word = function (options) {
-//         options = initOptions(options);
 
-//         testRange(
-//             options.syllables && options.length,
-//             "Chance: Cannot specify both syllables AND length."
-//         );
-
-//         var syllables = options.syllables || this.natural({min: 1, max: 3}),
-//             text = '';
-
-//         if (options.length) {
-//             // Either bound word by length
-//             do {
-//                 text += this.syllable();
-//             } while (text.length < options.length);
-//             text = text.substring(0, options.length);
-//         } else {
-//             // Or by number of syllables
-//             for (var i = 0; i < syllables; i++) {
-//                 text += this.syllable();
-//             }
-//         }
-
-//         if (options.capitalize) {
-//             text = this.capitalize(text);
-//         }
-
-//         return text;
-//     };
 
 //     // -- End Text --
 
 //     // -- Person --
 
-//     Chance.prototype.age = function (options) {
-//         options = initOptions(options);
-//         var ageRange;
-
-//         switch (options.type) {
-//             case 'child':
-//                 ageRange = {min: 0, max: 12};
-//                 break;
-//             case 'teen':
-//                 ageRange = {min: 13, max: 19};
-//                 break;
-//             case 'adult':
-//                 ageRange = {min: 18, max: 65};
-//                 break;
-//             case 'senior':
-//                 ageRange = {min: 65, max: 100};
-//                 break;
-//             case 'all':
-//                 ageRange = {min: 0, max: 100};
-//                 break;
-//             default:
-//                 ageRange = {min: 18, max: 65};
-//                 break;
-//         }
-
-//         return this.natural(ageRange);
-//     };
-
-//     Chance.prototype.birthday = function (options) {
-//         var age = this.age(options);
-//         var currentYear = new Date().getFullYear();
-
-//         if (options && options.type) {
-//             var min = new Date();
-//             var max = new Date();
-//             min.setFullYear(currentYear - age - 1);
-//             max.setFullYear(currentYear - age);
-
-//             options = initOptions(options, {
-//                 min: min,
-//                 max: max
-//             });
-//         } else {
-//             options = initOptions(options, {
-//                 year: currentYear - age
-//             });
-//         }
-
-//         return this.date(options);
-//     };
 
 //     // CPF; ID to identify taxpayers in Brazil
 //     Chance.prototype.cpf = function (options) {
@@ -678,10 +560,7 @@ public class ChanceBad{
 
 //     // -- Miscellaneous --
 
-//     // Coin - Flip, flip, flipadelphia
-//     Chance.prototype.coin = function() {
-//       return this.bool() ? "heads" : "tails";
-//     }
+
 
 //     // Dice - For all the board game geeks out there, myself included ;)
 //     function diceFn (range) {
@@ -716,23 +595,7 @@ public class ChanceBad{
 //         }
 //     };
 
-//     // Guid
-//     Chance.prototype.guid = function (options) {
-//         options = initOptions(options, { version: 5 });
 
-//         var guid_pool = "abcdef1234567890",
-//             variant_pool = "ab89",
-//             guid = this.string({ pool: guid_pool, length: 8 }) + '-' +
-//                    this.string({ pool: guid_pool, length: 4 }) + '-' +
-//                    // The Version
-//                    options.version +
-//                    this.string({ pool: guid_pool, length: 3 }) + '-' +
-//                    // The Variant
-//                    this.string({ pool: variant_pool, length: 1 }) +
-//                    this.string({ pool: guid_pool, length: 3 }) + '-' +
-//                    this.string({ pool: guid_pool, length: 12 });
-//         return guid;
-//     };
 
 //     // Hash
 //     Chance.prototype.hash = function (options) {
