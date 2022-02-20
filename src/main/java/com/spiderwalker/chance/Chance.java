@@ -141,13 +141,13 @@ public class Chance {
             List<String> animaList = (ArrayList<String>) animals.get((String) options.get("type"));
             // if user does put in valid animal type, will return a random animal of that
             // type
-            return (T)pickone(animaList);
+            return (T) pickone(animaList);
         }
         // if user does not put in any animal type, will return a random animal
         // regardless
         // var animalTypeArray =
         // ["desert","forest","ocean","zoo","farm","pet","grassland"];
-        String randomType =  pickone(animalType);
+        String randomType = pickone(animalType);
         List<String> animaList = (ArrayList<String>) animals.get(randomType);
 
         return pickone(animaList);
@@ -570,6 +570,11 @@ public class Chance {
      * There can be more parameters after these. All additional parameters
      * are provided to the given function
      */
+    public List<?> n(Supplier fn, Supplier d4) {
+        int size = (int) d4.get();
+        return n(fn, size);
+    }
+
     public List<?> n(Supplier fn, int size) {
         testRange(fn == null, "Chance: The first argument must be a function.");
         // Providing a negative count should result in a noop.
@@ -821,7 +826,7 @@ public class Chance {
         );
 
         int syllables = (int) options.get("syllables");
-        int length =options.get("length")==null? syllables+1: (int) options.get("length");
+        int length = options.get("length") == null ? syllables + 1 : (int) options.get("length");
         String text = "";
 
         if (length > 0) {
@@ -886,7 +891,7 @@ public class Chance {
         String type = (String) options.get("type");
         Map<String, Object> defaults = new HashMap<>();
         if (type != null) {
-            defaults.put("minDate", currentYear.minusYears((age+1)));
+            defaults.put("minDate", currentYear.minusYears((age + 1)));
             defaults.put("maxDate", currentYear.minusYears((age)));
 
 
@@ -959,7 +964,7 @@ public class Chance {
         options = initOptions(options, defaults);
         Map<String, Object> firstNames = (Map<String, Object>) data.get("firstNames");
         Map<String, Object> firstNamesGender =
-                (Map<String, Object>) firstNames.get(((String)options.get("gender")).toLowerCase());
+                (Map<String, Object>) firstNames.get(((String) options.get("gender")).toLowerCase());
         List<String> firstNamesNationality = (List<String>) firstNamesGender.get(options.get("nationality"));
         return pickone(firstNamesNationality);
     }
@@ -2063,7 +2068,7 @@ public class Chance {
         LocalDateTime date;
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("string", false);
-        options =initOptions(options,defaults);
+        options = initOptions(options, defaults);
         // If interval is specified we ignore preset
         if (options != null && (options.get("min") != null || options.get("max") != null)) {
             defaults.put("american", true);
@@ -2077,7 +2082,7 @@ public class Chance {
             options.put("raw", true);
             Map<String, Object> m = month(options);
 
-            int daysInMonth = (int)(double)m.get("days");
+            int daysInMonth = (int) (double) m.get("days");
 
             if (options != null && options.get("month") != null) {
                 // Mod 12 to allow months outside range of 0-11 (not encouraged, but also not prevented).
@@ -2086,7 +2091,7 @@ public class Chance {
                 daysInMonth = Integer.parseInt(String.valueOf(m.get("days")));
             }
             defaults.put("year", year(null));
-            defaults.put("month", Integer.parseInt(String.valueOf(m.get("numeric"))) );
+            defaults.put("month", Integer.parseInt(String.valueOf(m.get("numeric"))));
             defaults.put("day", random(1, daysInMonth));
             Map<String, Object> hourOptions = new HashMap<>();
             hourOptions.put("twentyfour", true);
@@ -2118,7 +2123,7 @@ public class Chance {
             date_string = date.getDayOfMonth() + "/" + (date.getDayOfMonth() + 1) + "/" + date.getYear();
         }
 
-        return (boolean)options.get("string")  ? (T) date_string : (T) date;
+        return (boolean) options.get("string") ? (T) date_string : (T) date;
     }
 
     public int hour(Map<String, Object> options) {
@@ -2161,14 +2166,14 @@ public class Chance {
         defaults.put("min", LocalDateTime.now().getYear());
         // Default to current year as min if none specified
         options = initOptions(options, defaults);
-        int min=(int) options.get("min");
+        int min = (int) options.get("min");
         // Default to one century after current year as max if none specified
-        int max=min + 100;
-        if(options.get("max")!=null){
-            max=(int) options.get("max") ;
+        int max = min + 100;
+        if (options.get("max") != null) {
+            max = (int) options.get("max");
         }
 
-        return natural(min,max);
+        return natural(min, max);
     }
 
     public int second() {
@@ -2211,7 +2216,7 @@ public class Chance {
         testRange(min > max, "Chance: Min cannot be greater than Max.");
         List<Map<String, String>> months = months();
         Map<String, Object> month = pickone(months.subList(min - 1, max));
-        return (boolean)options.get("raw")  ? (T) month : (T) month.get("name");
+        return (boolean) options.get("raw") ? (T) month : (T) month.get("name");
     }
 
     long hammertime(Map<String, Object> options) {
@@ -2580,8 +2585,6 @@ public class Chance {
         String evens = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         String odds = "BAKPLCQDREVOSFTGUHMINJWZYX";
         int digit = 0;
-
-
         for (var i = 0; i < 15; i++) {
             if (i % 2 != 0) {
                 digit += evens.indexOf(range2[range1.indexOf(cf.charAt(i))]);
@@ -2591,46 +2594,50 @@ public class Chance {
         }
         return evens.split("")[digit % 26];
     }
-    public String pl_pesel () {
+
+    public String pl_pesel() {
         int number = natural(1, 999999999);
-        int [] arr = Stream.of(pad(number, 10,"").split(""))
+        int[] arr = Stream.of(pad(number, 10, "").split(""))
                 .mapToInt(Integer::parseInt)
                 .toArray();
 
         int controlNumber = (1 * arr[0] + 3 * arr[1] + 7 * arr[2] + 9 * arr[3] + 1 * arr[4] + 3 * arr[5] + 7 * arr[6] + 9 * arr[7] + 1 * arr[8] + 3 * arr[9]) % 10;
-        if(controlNumber !=0) {
+        if (controlNumber != 0) {
             controlNumber = 10 - controlNumber;
         }
 
         return Arrays.stream(arr)
                 .mapToObj(String::valueOf)
-                .collect(Collectors.joining(""))+controlNumber;
+                .collect(Collectors.joining("")) + controlNumber;
     }
-    public String pl_nip () {
+
+    public String pl_nip() {
         int number = natural(1, 999999999);
-        int [] arr = Stream.of(pad(number, 9,"").split(""))
+        int[] arr = Stream.of(pad(number, 9, "").split(""))
                 .mapToInt(Integer::parseInt)
                 .toArray();
 
         int controlNumber = (6 * arr[0] + 5 * arr[1] + 7 * arr[2] + 2 * arr[3] + 3 * arr[4] + 4 * arr[5] + 5 * arr[6] + 6 * arr[7] + 7 * arr[8]) % 11;
-        if(controlNumber == 10) {
+        if (controlNumber == 10) {
             return this.pl_nip();
         }
 
         return Arrays.stream(arr)
                 .mapToObj(String::valueOf)
                 .collect(Collectors.joining("")) + controlNumber;
-    };
+    }
 
-    public String pl_regon () {
+    ;
+
+    public String pl_regon() {
         int number = natural(1, 999999999);
-        int [] arr = Stream.of(pad(number, 8,"").split(""))
+        int[] arr = Stream.of(pad(number, 8, "").split(""))
                 .mapToInt(Integer::parseInt)
                 .toArray();
 
 
         int controlNumber = (8 * arr[0] + 9 * arr[1] + 2 * arr[2] + 3 * arr[3] + 4 * arr[4] + 5 * arr[5] + 6 * arr[6] + 7 * arr[7]) % 11;
-        if(controlNumber == 10) {
+        if (controlNumber == 10) {
             controlNumber = 0;
         }
 
@@ -2643,9 +2650,9 @@ public class Chance {
 
     // -- Music --
 
-    public String note  (Map<String, Object> options) {
+    public String note(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        defaults.put("notes","flatKey");
+        defaults.put("notes", "flatKey");
         // choices for 'notes' option:
         // flatKey - chromatic scale with flat notes (default)
         // sharpKey - chromatic scale with sharp notes
@@ -2655,14 +2662,11 @@ public class Chance {
         // all - naturals, sharps and flats
         options = initOptions(options, defaults);
         Map<String, Object> scales = new HashMap<>();
-        List<String> naturals =List.of("C", "D", "E", "F", "G", "A", "B");
-        List<String> flats=List.of("D♭", "E♭", "G♭", "A♭", "B♭");
-        List<String> sharps=List.of("C♯", "D♯", "F♯", "G♯", "A♯");
-        scales.put("naturals",List.of('C', 'D', 'E', 'F', 'G', 'A', 'B'));
-        scales.put("flats",List.of("D♭", "E♭", "G♭", "A♭", "B♭"));
-        scales.put("sharps",List.of("C♯", "D♯", "F♯", "G♯", "A♯"));
+        List<String> naturals = List.of("C", "D", "E", "F", "G", "A", "B");
+        List<String> flats = List.of("D♭", "E♭", "G♭", "A♭", "B♭");
+        List<String> sharps = List.of("C♯", "D♯", "F♯", "G♯", "A♯");
 
-        List<String> all = (List) Stream.of(naturals, flats,sharps)
+        List<String> all = (List) Stream.of(naturals, flats, sharps)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
@@ -2670,13 +2674,149 @@ public class Chance {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
-        List<String> sharpKey = (List) Stream.of(naturals,sharps)
+        List<String> sharpKey = (List) Stream.of(naturals, sharps)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-        scales.put("all",all);
-        scales.put("flatKey",flatKey);
-        scales.put("sharpKey",sharpKey);
-        return pickone((List<String>) scales.get("notes"));
+        scales.put("all", all);
+        scales.put("flatKey", flatKey);
+        scales.put("sharpKey", sharpKey);
+        List<String> notes = (List<String>) scales.get(options.get("notes"));
+        return pickone(notes);
     }
 
+
+    public int midi_note(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("min", 0);
+        defaults.put("max", 127);
+
+        options = initOptions(options, defaults);
+        int min = (int) options.get("min");
+        int max = (int) options.get("max");
+        return integer(min, max);
+    }
+
+    public String chord_quality(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("jazz", true);
+        options = initOptions(options, defaults);
+        List<String> chord_qualities = List.of("maj", "min", "aug", "dim");
+        if ((boolean) options.get("jazz")) {
+            chord_qualities = List.of(
+                    "maj7",
+                    "min7",
+                    "7",
+                    "sus",
+                    "dim",
+                    "ø"
+            );
+        }
+        return pickone(chord_qualities);
+    }
+
+    public String chord(Map<String, Object> options) {
+        options = initOptions(options, new HashMap<>());
+        return note(options) + chord_quality(options);
+    }
+
+    public int tempo(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("min", 40);
+        defaults.put("max", 320);
+
+        options = initOptions(options, defaults);
+        int min = (int) options.get("min");
+        int max = (int) options.get("max");
+        return integer(min, max);
+    }
+    // -- End Music
+
+    // -- Miscellaneous --
+
+
+    // Dice - For all the board game geeks out there, myself included ;)
+
+
+    public <T> T rpg(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        options = initOptions(options, defaults);
+        testRange(options.get("thrown") == null, "Chance: A type of die roll must be included");
+        String[] bits = ((String) options.get("thrown")).toLowerCase().split("d");
+        Map<Integer, Integer> rolls= new HashMap<>();
+//
+        testRange(bits.length != 2 || !isNumeric(bits[0]) || !isNumeric(bits[1]), "Chance: Invalid format provided. Please provide #d# where the first # is the number of dice to roll, the second # is the max of each die");
+        for (int i = Integer.parseInt(bits[0]); i > 0; i--) {
+            rolls.put(i - 1, natural(1, Integer.parseInt(bits[1])));
+        }
+        if(options.get("sum")!=null && (boolean)options.get("sum") ){
+            return (T) rolls.values().parallelStream().reduce(0, Integer::sum);
+        }
+        return (T) rolls;
+    }
+
+    public boolean luhn_check  (int num) {
+        String str = num+"";
+        var checkDigit = str.substring(str.length() - 1);
+        return checkDigit == luhn_calculate(str.substring(0, str.length() - 1));
+    }
+    public <T> T fileExtension() {
+        return (T) data.get("fileExtension");
+    }
+
+    public String file  (Map<String, Object>options) {
+
+        var fileOptions = initOptions(options,new HashMap<>() );
+        var poolCollectionKey = "fileExtension";
+        Map<String, List<String>> fileExtensions= fileExtension();
+        Set typeRange   = fileExtensions.keySet();//['raster', 'vector', '3d', 'document'];
+//        var fileName;
+//        var fileExtension;
+//
+//        // Generate random file name
+//        fileName = this.word({length : fileOptions.length});
+//
+//        // Generate file by specific extension provided by the user
+//        if(fileOptions.extension) {
+//
+//            fileExtension = fileOptions.extension;
+//            return (fileName + '.' + fileExtension);
+//        }
+//
+//        // Generate file by specific extension collection
+//        if(fileOptions.extensions) {
+//
+//            if(Array.isArray(fileOptions.extensions)) {
+//
+//                fileExtension = this.pickone(fileOptions.extensions);
+//                return (fileName + '.' + fileExtension);
+//            }
+//            else if(fileOptions.extensions.constructor === Object) {
+//
+//                var extensionObjectCollection = fileOptions.extensions;
+//                var keys = Object.keys(extensionObjectCollection);
+//
+//                fileExtension = this.pickone(extensionObjectCollection[this.pickone(keys)]);
+//                return (fileName + '.' + fileExtension);
+//            }
+//
+//            throw new Error("Chance: Extensions must be an Array or Object");
+//        }
+//
+//        // Generate file extension based on specific file type
+//        if(fileOptions.fileType) {
+//
+//            var fileType = fileOptions.fileType;
+//            if(typeRange.indexOf(fileType) !== -1) {
+//
+//                fileExtension = this.pickone(this.get(poolCollectionKey)[fileType]);
+//                return (fileName + '.' + fileExtension);
+//            }
+//
+//            throw new RangeError("Chance: Expect file type value to be 'raster', 'vector', '3d' or 'document'");
+//        }
+//
+//        // Generate random file name if no extension options are passed
+//        fileExtension = this.pickone(this.get(poolCollectionKey)[this.pickone(typeRange)]);
+        return null;//(fileName + '.' + fileExtension);
+    };
 }

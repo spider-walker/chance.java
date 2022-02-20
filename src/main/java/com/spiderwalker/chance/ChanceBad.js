@@ -3,94 +3,18 @@
 
     // -- End Regional
 
-    // -- Music --
-
-    Chance.prototype.note = function(options) {
-      // choices for 'notes' option:
-      // flatKey - chromatic scale with flat notes (default)
-      // sharpKey - chromatic scale with sharp notes
-      // flats - just flat notes
-      // sharps - just sharp notes
-      // naturals - just natural notes
-      // all - naturals, sharps and flats
-      options = initOptions(options, { notes : 'flatKey'});
-      var scales = {
-        naturals: ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
-        flats: ['D♭', 'E♭', 'G♭', 'A♭', 'B♭'],
-        sharps: ['C♯', 'D♯', 'F♯', 'G♯', 'A♯']
-      };
-      scales.all = scales.naturals.concat(scales.flats.concat(scales.sharps))
-      scales.flatKey = scales.naturals.concat(scales.flats)
-      scales.sharpKey = scales.naturals.concat(scales.sharps)
-      return this.pickone(scales[options.notes]);
-    }
-
-    Chance.prototype.midi_note = function(options) {
-      var min = 0;
-      var max = 127;
-      options = initOptions(options, { min : min, max : max });
-      return this.integer({min: options.min, max: options.max});
-    }
-
-    Chance.prototype.chord_quality = function(options) {
-      options = initOptions(options, { jazz: true });
-      var chord_qualities = ['maj', 'min', 'aug', 'dim'];
-      if (options.jazz){
-        chord_qualities = [
-          'maj7',
-          'min7',
-          '7',
-          'sus',
-          'dim',
-          'ø'
-        ];
-      }
-      return this.pickone(chord_qualities);
-    }
-
-    Chance.prototype.chord = function (options) {
-      options = initOptions(options);
-      return this.note(options) + this.chord_quality(options);
-    }
-
-    Chance.prototype.tempo = function (options) {
-      var min = 40;
-      var max = 320;
-      options = initOptions(options, {min: min, max: max});
-      return this.integer({min: options.min, max: options.max});
-    }
-
-    // -- End Music
-
-    // -- Miscellaneous --
 
 
-    // Dice - For all the board game geeks out there, myself included ;)
 
 
-    Chance.prototype.rpg = function (thrown, options) {
-        options = initOptions(options);
-        if (!thrown) {
-            throw new RangeError("Chance: A type of die roll must be included");
-        } else {
-            var bits = thrown.toLowerCase().split("d"),
-                rolls = [];
 
-            if (bits.length !== 2 || !parseInt(bits[0], 10) || !parseInt(bits[1], 10)) {
-                throw new Error("Chance: Invalid format provided. Please provide #d# where the first # is the number of dice to roll, the second # is the max of each die");
-            }
-            for (var i = bits[0]; i > 0; i--) {
-                rolls[i - 1] = this.natural({min: 1, max: bits[1]});
-            }
-            return (typeof options.sum !== 'undefined' && options.sum) ? rolls.reduce(function (p, c) { return p + c; }) : rolls;
-        }
-    };
 
-    Chance.prototype.luhn_check = function (num) {
-        var str = num.toString();
-        var checkDigit = +str.substring(str.length - 1);
-        return checkDigit === this.luhn_calculate(+str.substring(0, str.length - 1));
-    };
+
+
+
+    ;
+
+
 
 
 
