@@ -1,22 +1,21 @@
 package com.spiderwalker.chance;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+
 import com.spiderwalker.chance.constant.Constants;
 import com.spiderwalker.chance.exception.RangeError;
 
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ChanceTest {
 
@@ -32,7 +31,7 @@ public class ChanceTest {
     public void shouldReadJsonFile() {
         Chance chance = new Chance();
         Map<String, ?> map = chance.readJson();
-        assertEquals(25, map.size());
+        assertEquals(27, map.size());
     }
 
     @Test
@@ -278,7 +277,8 @@ public class ChanceTest {
     public void shouldReturnMonths() {
         Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
-        assertEquals(12, chance.months().size());
+        List<Map<String, Object>> months = chance.months();
+        assertEquals(12, months.size());
     }
 
     @Test
@@ -290,11 +290,11 @@ public class ChanceTest {
 
         options.put("type", "child");
         age = chance.age(options);
-        assertTrue(age > 0 && age < 22);
+        assertTrue(age >= 0 && age <= 22);
 
         options.put("type", "teen");
         age = chance.age(options);
-        assertTrue(age > 13 && age < 19);
+        assertTrue(age >= 13 && age <= 19);
     }
 
     @Test
@@ -339,13 +339,75 @@ public class ChanceTest {
     public void shouldReturnDate() {
         Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
-        assertEquals("", chance.date(options));
+        assertNotNull( chance.date(options));
+    }
+
+    @Test
+    public void shouldReturnYear() {
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = new Chance();
+        int min = LocalDateTime.now().getYear();
+        int year = chance.year(options);
+        assertTrue(year >= min && year < (min + 100));
+        int max = min + 10;
+        options.put("max", max);
+        year = chance.year(options);
+        assertTrue(year >= min && year < (max));
+    }
+
+    @Test
+    public void shouldReturnMonthObject() {
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = new Chance();
+        String monthString = chance.month(options);
+        assertNotNull(monthString);
+
+        options.put("raw", true);
+        Map<String, Object> monthMap = chance.month(options);
+
     }
 
     @Test
     public void shouldCapitalize() {
         Chance chance = new Chance();
-        assertEquals("Milk Way", chance.capitalize("Milk way"));
+        assertEquals("Milk way", chance.capitalize("milk way"));
+    }
+    @Test
+    public void shouldReturnString() {
+        Chance chance = new Chance();
+        assertNotNull( chance.string(null));
+    }
+
+    @Test
+    public void shouldReturnWord() {
+        Chance chance = new Chance();
+        assertFalse( chance.word(null).isEmpty());
+    }
+
+    @Test
+    public void shouldReturnFirst() {
+        Chance chance = new Chance();
+        assertFalse( chance.first(null).isEmpty());
+    }
+
+    @Test
+    public void shouldReturnLast() {
+        Chance chance = new Chance();
+        assertFalse( chance.last(null).isEmpty());
+    }
+
+    @Test
+    public void shouldReturnCodicefiscale() {
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = new Chance();
+        assertEquals("Milk Way", chance.cf(options));
+    }
+
+    @Test
+    public void shouldReturnBirthday() {
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = new Chance();
+        assertNotNull(chance.birthday(options));
     }
 
 }
