@@ -55,6 +55,56 @@ public class ChanceTest {
     }
 
     @Test
+    public void shouldReturnWeekDay() {
+        Chance chance = new Chance();
+        String result = chance.weekday(null);
+        assertNotNull(result);
+
+    }
+    @Test
+    public void shouldReturnTimestamp() {
+        Chance chance = new Chance();
+        String result = String.valueOf(chance.timestamp(null));
+        assertNotNull(result);
+    }
+    @Test
+    public void shouldReturnHour() {
+        Chance chance = new Chance();
+        String result = String.valueOf(chance.hour(null));
+        assertNotNull(result);
+    }
+    @Test
+    public void shouldReturnAmpm() {
+        Chance chance = new Chance();
+        String result = String.valueOf(chance.ampm());
+        assertNotNull(result);
+    }
+    @Test
+    public void shouldReturnStreet() {
+        Chance chance = new Chance();
+        String result = String.valueOf(chance.street(null));
+        System.out.println(result);
+        assertNotNull(result);
+    }
+
+    @Test
+    public void shouldReturnColor() {
+        Chance chance = new Chance();
+        String result = String.valueOf(chance.color());
+        System.out.println(result);
+        assertNotNull(result);
+    }
+    @Test
+    public void shouldReturnZip() {
+        Chance chance = new Chance();
+        String result = String.valueOf(chance.zip(null));
+        assertNotNull(result);
+        Map<String, Object> options = new HashMap<>();
+        options.put("plusfour", true);
+        result = String.valueOf(chance.zip(options));
+        assertNotNull(result);
+    }
+    @Test
     public void shoudlGenerateRandomInteger() {
         Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
