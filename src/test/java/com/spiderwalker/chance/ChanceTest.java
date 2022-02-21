@@ -338,7 +338,7 @@ public class ChanceTest {
     public void shouldReturnDate() {
         Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
-        assertNotNull( chance.date(options));
+        assertNotNull(chance.date(options));
     }
 
     @Test
@@ -371,28 +371,29 @@ public class ChanceTest {
         Chance chance = new Chance();
         assertEquals("Milk way", chance.capitalize("milk way"));
     }
+
     @Test
     public void shouldReturnString() {
         Chance chance = new Chance();
-        assertNotNull( chance.string(null));
+        assertNotNull(chance.string(null));
     }
 
     @Test
     public void shouldReturnWord() {
         Chance chance = new Chance();
-        assertFalse( chance.word(null).isEmpty());
+        assertFalse(chance.word(null).isEmpty());
     }
 
     @Test
     public void shouldReturnFirst() {
         Chance chance = new Chance();
-        assertFalse( chance.first(null).isEmpty());
+        assertFalse(chance.first(null).isEmpty());
     }
 
     @Test
     public void shouldReturnLast() {
         Chance chance = new Chance();
-        assertFalse( chance.last(null).isEmpty());
+        assertFalse(chance.last(null).isEmpty());
     }
 
     @Test
@@ -421,33 +422,33 @@ public class ChanceTest {
         Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
         Supplier<Object> func = () -> chance.natural(options);
-        Supplier d4= chance.d4;
+        Supplier d4 = chance.d4;
         List<Integer> list = (List<Integer>) chance.n(func, d4);
-        assertTrue(list.size()>0);
+        assertTrue(list.size() > 0);
 
-        Supplier d6= chance.d6;
+        Supplier d6 = chance.d6;
         list = (List<Integer>) chance.n(func, d6);
-        assertTrue(list.size()>0);
+        assertTrue(list.size() > 0);
 
-        Supplier d8= chance.d8;
+        Supplier d8 = chance.d8;
         list = (List<Integer>) chance.n(func, d8);
-        assertTrue(list.size()>0);
+        assertTrue(list.size() > 0);
 
-        Supplier d10= chance.d10;
+        Supplier d10 = chance.d10;
         list = (List<Integer>) chance.n(func, d10);
-        assertTrue(list.size()>0);
+        assertTrue(list.size() > 0);
 
-        Supplier d20= chance.d20;
+        Supplier d20 = chance.d20;
         list = (List<Integer>) chance.n(func, d20);
-        assertTrue(list.size()>0);
+        assertTrue(list.size() > 0);
 
-        Supplier d30= chance.d30;
+        Supplier d30 = chance.d30;
         list = (List<Integer>) chance.n(func, d30);
-        assertTrue(list.size()>0);
+        assertTrue(list.size() > 0);
 
-        Supplier d100= chance.d100;
+        Supplier d100 = chance.d100;
         list = (List<Integer>) chance.n(func, d100);
-        assertTrue(list.size()>0);
+        assertTrue(list.size() > 0);
     }
 
 
@@ -457,12 +458,14 @@ public class ChanceTest {
         Chance chance = new Chance();
         assertNotNull(chance.midi_note(options));
     }
+
     @Test
     public void shouldReturnChordQuality() {
         Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
         assertNotNull(chance.chord_quality(options));
     }
+
     @Test
     public void shouldReturnChord() {
         Map<String, Object> options = new HashMap<>();
@@ -484,19 +487,19 @@ public class ChanceTest {
         assertThrows(RangeError.class, () -> {
             chance.rpg(options);
         });
-        options.put("thrown","3dx");
+        options.put("thrown", "3dx");
         assertThrows(RangeError.class, () -> {
             chance.rpg(options);
         });
 
-        options.put("thrown","5d6");
-        Map<Integer, Integer> rolls= chance.rpg(options);
+        options.put("thrown", "5d6");
+        Map<Integer, Integer> rolls = chance.rpg(options);
 
-        assertEquals(rolls.size(),5);
+        assertEquals(rolls.size(), 5);
 
-        options.put("sum",true);
-        int sum= chance.rpg(options);
-        assertTrue(sum>0);
+        options.put("sum", true);
+        int sum = chance.rpg(options);
+        assertTrue(sum > 0);
     }
 
     @Test
@@ -511,5 +514,7 @@ public class ChanceTest {
         Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
         assertNotNull(chance.file(options));
+
+
     }
 }

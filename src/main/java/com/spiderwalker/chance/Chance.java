@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 
 public class Chance {
     public String VERSION = "1.1.8";
-    Map<String, ?> data;
+    Map<String, Object> data;
     Random rand = new Random();
 
     public Chance() {
@@ -43,7 +43,7 @@ public class Chance {
         return file;
     }
 
-    public Map<String, ?> readJson() {
+    public Map readJson() {
         Map jsonMap = null;
         try {
             // create Gson instance
@@ -93,6 +93,10 @@ public class Chance {
         return rand.nextInt(max - min) + min;
     }
 
+    public int random() {
+        return rand.nextInt();
+    }
+
     public long random(long min, long max) {
         return rand.nextInt((int) (max - min)) + min;
     }
@@ -102,8 +106,8 @@ public class Chance {
      *
      * @param options={ likelihood: 50 } alter the likelihood of
      *                  receiving a true or false value back.
-     * @throws {RangeError} if the likelihood is out of bounds
-     * @returns boolean either true or false
+     * throws {RangeError} if the likelihood is out of bounds
+     * returns boolean either true or false
      */
     public boolean bool(Map<String, Object> options) {
         // likelihood of success (true)
@@ -124,11 +128,13 @@ public class Chance {
 
         return Math.random() * 100 < (int) options.get("likelihood");
     }
-
+    public <T> T animals() {
+        return (T) data.get("animals");
+    }
     public <T> T animal(Map<String, Object> options) {
         // returns a random animal
         options = initOptions(options, new HashMap<>());
-        Map<String, Object> animals = (Map<String, Object>) data.get("animals");
+        Map<String, Object> animals =  animals();
         List<String> animalType = Stream.of("desert", "forest", "ocean", "zoo", "farm", "pet", "grassland")
                 .collect(Collectors.toList());
 
@@ -158,7 +164,7 @@ public class Chance {
      *
      * @param {Object} [options={}] can specify a character pool or alpha,
      *                 numeric, symbols and casing (lower or upper)
-     * @returns {String} a single random character
+     * returns {String} a single random character
      */
     public char character(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
@@ -216,9 +222,9 @@ public class Chance {
      * Return a random floating point number
      *
      * @param {Object} [options={}] can specify a fixed precision, min, max
-     * @throws {RangeError} Can only specify fixed or precision, not both. Also
+     * throws {RangeError} Can only specify fixed or precision, not both. Also
      *                      min cannot be greater than max
-     * @returns {Number} a single floating point number
+     * returns {Number} a single floating point number
      */
 
     public float floating(Map<String, Object> options) {
@@ -252,8 +258,8 @@ public class Chance {
      * would return either 1, 2, or 3.
      *
      * @param {Object} [options={}] can specify a min and/or max
-     * @throws {RangeError} min cannot be greater than max
-     * @returns {Number} a single random integer number
+     * throws {RangeError} min cannot be greater than max
+     * returns {Number} a single random integer number
      */
     public int integer(Map<String, Object> options) {
         // 2147483647 (2^53) is the max integer number in Java
@@ -283,8 +289,8 @@ public class Chance {
      *
      * @param {Object} [options={}] can specify a min and/or max or a numerals
      *                 count.
-     * @throws {RangeError} min cannot be greater than max
-     * @returns {Number} a single random integer number
+     * throws {RangeError} min cannot be greater than max
+     * returns {Number} a single random integer number
      */
 
     boolean isNumeric(Object object) {
@@ -364,8 +370,8 @@ public class Chance {
      * NOTE the max and min are INCLUDED in the range.
      *
      * @param {Object} [options={}] can specify a min and/or max
-     * @throws {RangeError} min cannot be greater than max nor negative
-     * @returns {Number} a single random prime number
+     * throws {RangeError} min cannot be greater than max nor negative
+     * returns {Number} a single random prime number
      */
     public int prime(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
@@ -400,8 +406,8 @@ public class Chance {
      * would return either '9', 'A' or 'B'.
      *
      * @param {Object} [options={}] can specify a min and/or max and/or casing
-     * @throws {RangeError} min cannot be greater than max
-     * @returns {String} a single random string hex number
+     * throws {RangeError} min cannot be greater than max
+     * returns {String} a single random string hex number
      */
     public String hex(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
@@ -434,8 +440,8 @@ public class Chance {
      * Return a random string
      *
      * @param {Object} [options={}] can specify a length or min and max
-     * @throws {RangeError} length cannot be less than zero
-     * @returns {String} a string of random length
+     * throws {RangeError} length cannot be less than zero
+     * returns {String} a string of random length
      */
     public String string(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
@@ -473,8 +479,8 @@ public class Chance {
      * Return a random buffer
      *
      * @param {Object} [options={}] can specify a length
-     * @throws {RangeError} length cannot be less than zero
-     * @returns {Buffer} a buffer of random length
+     * throws {RangeError} length cannot be less than zero
+     * returns {Buffer} a buffer of random length
      */
     public Object buffer(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
@@ -519,7 +525,7 @@ public class Chance {
      * @param {Function} fn the function that generates something random
      * @param {Number}   num number of terms to generate
      * @param {Object}   options any options to pass on to the generator function
-     * @returns {Array} an array of length `num` with every item generated by `fn` and unique
+     * returns {Array} an array of length `num` with every item generated by `fn` and unique
      * <p>
      * There can be more parameters after these. All additional parameters are provided to the given function
      */
@@ -565,7 +571,7 @@ public class Chance {
      *
      * @param {Function} fn the function that generates something random
      * @param {Number}   n number of terms to generate
-     * @returns {Array} an array of length `n` with items generated by `fn`
+     * returns {Array} an array of length `n` with items generated by `fn`
      * <p>
      * There can be more parameters after these. All additional parameters
      * are provided to the given function
@@ -575,20 +581,20 @@ public class Chance {
         return n(fn, size);
     }
 
-    public List<?> n(Supplier fn, int size) {
+    public <T> T n(Supplier fn, int size) {
         testRange(fn == null, "Chance: The first argument must be a function.");
         // Providing a negative count should result in a noop.
 
         if (size < 0) {
             size = 1;
         }
-        List<Object> s = new ArrayList<>();
+        List<T> s = new ArrayList<>();
 
         for (int i = 0; i < size; i++) {
-            s.add(fn.get());
+            s.add((T) fn.get());
         }
 
-        return s;
+        return (T) s;
     }
 
     // H/T to SO for this one: http://vq.io/OtUrZ5
@@ -935,11 +941,9 @@ public class Chance {
     public String cnpj() {
         Map<String, Object> options = new HashMap<>();
         options.put("max", 9);
-        Supplier<Object> naturalFn = () -> {
-            return natural(options);
-        };
+        Supplier<Integer> naturalFn = () -> natural(options);
 
-        Integer[] numbers = n(naturalFn, 8).toArray(Integer[]::new);
+        Integer[] numbers = ((List<Integer>) n(naturalFn, 8)).toArray(Integer[]::new);
 
         int d1 = 2 + numbers[7] * 6 + numbers[6] * 7 + numbers[5] * 8 + numbers[4] * 9 + numbers[3] * 2 + numbers[2] * 3
                 + numbers[1] * 4 + numbers[0] * 5;
@@ -2742,81 +2746,231 @@ public class Chance {
         options = initOptions(options, defaults);
         testRange(options.get("thrown") == null, "Chance: A type of die roll must be included");
         String[] bits = ((String) options.get("thrown")).toLowerCase().split("d");
-        Map<Integer, Integer> rolls= new HashMap<>();
+        Map<Integer, Integer> rolls = new HashMap<>();
 //
         testRange(bits.length != 2 || !isNumeric(bits[0]) || !isNumeric(bits[1]), "Chance: Invalid format provided. Please provide #d# where the first # is the number of dice to roll, the second # is the max of each die");
         for (int i = Integer.parseInt(bits[0]); i > 0; i--) {
             rolls.put(i - 1, natural(1, Integer.parseInt(bits[1])));
         }
-        if(options.get("sum")!=null && (boolean)options.get("sum") ){
+        if (options.get("sum") != null && (boolean) options.get("sum")) {
             return (T) rolls.values().parallelStream().reduce(0, Integer::sum);
         }
         return (T) rolls;
     }
 
-    public boolean luhn_check  (int num) {
-        String str = num+"";
+    public boolean luhn_check(int num) {
+        String str = num + "";
         var checkDigit = str.substring(str.length() - 1);
         return checkDigit == luhn_calculate(str.substring(0, str.length() - 1));
     }
+
     public <T> T fileExtension() {
         return (T) data.get("fileExtension");
     }
 
-    public String file  (Map<String, Object>options) {
+    public boolean checkArray(Object abc) {
+        return abc.getClass().isArray();
+    }
 
-        var fileOptions = initOptions(options,new HashMap<>() );
-        var poolCollectionKey = "fileExtension";
-        Map<String, List<String>> fileExtensions= fileExtension();
-        Set typeRange   = fileExtensions.keySet();//['raster', 'vector', '3d', 'document'];
-//        var fileName;
-//        var fileExtension;
-//
+    public String checkObject(Object abc) {
+        return abc.getClass().getConstructors()[0].toString();
+    }
+
+    public String file(Map<String, Object> options) {
+        Map<String, Object> fileOptions = initOptions(options, new HashMap<>());
+        Map<String, List<String>> fileExtensions = fileExtension();
+        Set<String> typeRange = fileExtensions.keySet();//['raster', 'vector', '3d', 'document'];
+
+        String fileExtension;
 //        // Generate random file name
-//        fileName = this.word({length : fileOptions.length});
+//        System.out.println(fileOptions);
+        String fileName = word(fileOptions);
 //
 //        // Generate file by specific extension provided by the user
-//        if(fileOptions.extension) {
-//
-//            fileExtension = fileOptions.extension;
-//            return (fileName + '.' + fileExtension);
+        if (fileOptions.get("extension") != null) {//
+            fileExtension = (String) fileOptions.get("extension");
+            return (fileName + '.' + fileExtension);
+        }
+
+        // Generate file by specific extension collection
+        if (fileOptions.get("extension") != null) {
+            if (checkArray(fileOptions.get("extension"))) {
+
+                fileExtension = pickone(List.of(fileOptions.get("extension")));
+                return (fileName + '.' + fileExtension);
+            } else if (fileOptions.get("extension") instanceof String) {
+
+                Map<String, List<String>> extensionObjectCollection = (Map<String, List<String>>) fileOptions.get("extension");
+                List<String> keys = new ArrayList<>(extensionObjectCollection.keySet());
+                fileExtension = pickone(extensionObjectCollection.get(pickone(keys)));
+                return (fileName + '.' + fileExtension);
+            }
+            testRange(true, "Chance: Extensions must be an Array or Object");
+
+        }
+
+        // Generate file extension based on specific file type
+        if (fileOptions.get("fileType") != null) {
+
+            String fileType = (String) fileOptions.get("fileType");
+            if (new ArrayList<>(typeRange).indexOf(fileType) != -1) {
+
+                fileExtension = pickone(fileExtensions.get(fileType));
+                return (fileName + '.' + fileExtension);
+            }
+
+            testRange(true, "Chance: Expect file type value to be 'raster', 'vector', '3d' or 'document'");
+        }
+
+        // Generate random file name if no extension options are passed
+        fileExtension = pickone(fileExtensions.get(pickone(new ArrayList<>(typeRange))));
+        return (fileName + '.' + fileExtension);
+    }
+
+
+    // Mac Address
+    public String mac_address(Map<String, Object> options) {
+        // typically mac addresses are separated by ":"
+        // however they can also be separated by "-"
+        // the network variant uses a dot every fourth byte
+        Map<String, Object> defaults = new HashMap<>();
+        options = initOptions(options, defaults);
+        String separator = "";
+        if (!isExist(options, "separator")) {
+            separator = get(options, "networkVersion") ? "." : ":";
+        }
+
+        String mac_pool = "ABCDEF1234567890";
+        String mac = "";
+        if (!isExist(options, "networkVersion")) {
+            Supplier fn = () -> string(mac_pool, 2);
+            List<String> macs = n(fn, 6);
+            mac = String.join(separator, macs);
+        } else {
+            Supplier fn = () -> string(mac_pool, 4);
+            List<String> macs = n(fn, 3);
+            mac = String.join(separator, macs);
+        }
+
+        return mac;
+    }
+
+    public <T> T get(Map<String, Object> options, String key) {
+        return (T) options.get(key);
+    }
+
+    public boolean isExist(Map<String, Object> options, String key) {
+        return options.get(key) == null;
+    }
+
+    public int normal(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        options.put("mean", 0);
+        options.put("dev", 1);
+        options.put("pool", new ArrayList<>());
+        options = initOptions(options, defaults);
+
+        testRange(
+                isExist(options, "pool"),
+                "Chance: The pool option must be a valid array."
+        );
+        testRange(
+                !isNumeric(get(options, "mean")),
+                "Chance: Mean (mean) must be a number"
+        );
+        testRange(
+                !isNumeric(get(options, "dev")),
+                "Chance: Standard deviation (dev) must be a number"
+        );
+
+        // If a pool has been passed, then we are returning an item from that pool,
+        // using the normal distribution settings that were passed in
+        String pool = get(options, "pool");
+        if (pool.length() > 0) {
+            return normal_pool(options);
+        }
+
+        // The Marsaglia Polar method
+        int s, u, v, norm;
+        int mean = get(options, "mean");
+        int dev = get(options, "dev");
+
+        do {
+            // U and V are from the uniform distribution on (-1, 1)
+            u = random() * 2 - 1;
+            v = random() * 2 - 1;
+
+            s = u * u + v * v;
+        } while (s >= 1);
+
+        // Compute the standard normal variate
+        norm = (int) (u * Math.sqrt(-2 * Math.log(s) / s));
+
+        // Shape and scale
+        return dev * norm + mean;
+    }
+
+    ;
+
+    public int normal_pool(Map<String, Object> options) {
+        int performanceCounter = 0;
+        Map<String, Object> defaults = new HashMap<>();
+        options.put("mean", get(options, "mean"));
+        options.put("dev", get(options, "dev"));
+        do {
+            var idx = Math.round(normal(options));
+
+            String pool = get(options, "pool");
+            int len = pool.length();
+            if (idx < len && idx >= 0) {
+                return pool.charAt(idx);
+            } else {
+                performanceCounter++;
+            }
+        } while (performanceCounter < 100);
+
+        testRange(true, "Chance: Your pool is too small for the given mean and standard deviation. Please adjust.");
+        return 0;
+    }
+
+    public String radio(Map<String, Object> options) {
+        // Initial Letter (Typically Designated by Side of Mississippi River)
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("side", "?");
+        options = initOptions(options, defaults);
+        String fl = "";
+        switch (((String)get(options,"side")).toLowerCase()) {
+            case "east":
+            case "e":
+                fl = "W";
+                break;
+            case "west":
+            case "w":
+                fl = "K";
+                break;
+            default:
+                fl = String.valueOf(character("KW"));
+                break;
+        }
+        options.put("alpha",true);
+        options.put("casing","upper");
+        return fl + character(options)+
+                character(options)+
+               character(options);
+    }
+
+    // Set the data as key and data or the data map
+    public void set (String name, Object values) {
+        if (name instanceof  String) {
+            data.put(name,values);
+        }
+//        else {
+//            data = copyObject(name, data);
 //        }
-//
-//        // Generate file by specific extension collection
-//        if(fileOptions.extensions) {
-//
-//            if(Array.isArray(fileOptions.extensions)) {
-//
-//                fileExtension = this.pickone(fileOptions.extensions);
-//                return (fileName + '.' + fileExtension);
-//            }
-//            else if(fileOptions.extensions.constructor === Object) {
-//
-//                var extensionObjectCollection = fileOptions.extensions;
-//                var keys = Object.keys(extensionObjectCollection);
-//
-//                fileExtension = this.pickone(extensionObjectCollection[this.pickone(keys)]);
-//                return (fileName + '.' + fileExtension);
-//            }
-//
-//            throw new Error("Chance: Extensions must be an Array or Object");
-//        }
-//
-//        // Generate file extension based on specific file type
-//        if(fileOptions.fileType) {
-//
-//            var fileType = fileOptions.fileType;
-//            if(typeRange.indexOf(fileType) !== -1) {
-//
-//                fileExtension = this.pickone(this.get(poolCollectionKey)[fileType]);
-//                return (fileName + '.' + fileExtension);
-//            }
-//
-//            throw new RangeError("Chance: Expect file type value to be 'raster', 'vector', '3d' or 'document'");
-//        }
-//
-//        // Generate random file name if no extension options are passed
-//        fileExtension = this.pickone(this.get(poolCollectionKey)[this.pickone(typeRange)]);
-        return null;//(fileName + '.' + fileExtension);
-    };
+    }
+    public String tv(Map<String, Object> options) {
+        return radio(options);
+    }
+
+    ;
 }
