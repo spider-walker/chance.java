@@ -1,19 +1,16 @@
 package com.spiderwalker.chance;
 
 
+import com.spiderwalker.chance.constant.Constants;
+import com.spiderwalker.chance.exception.RangeError;
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-
-import com.spiderwalker.chance.constant.Constants;
-import com.spiderwalker.chance.exception.RangeError;
-
-import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,7 +19,7 @@ public class ChanceTest {
     @Test
     public void shouldLoadFile() {
         Chance chance = new Chance();
-        File file = chance.readfile();
+        File file = chance.readFile();
         assertTrue(file.exists());
 
     }
@@ -123,19 +120,14 @@ public class ChanceTest {
         options.put("likelihood", 130);
         Chance chance = new Chance();
         Supplier<Object> func = () -> chance.bool(options);
-        assertThrows(RangeError.class, () -> {
-            chance.range(func, 6);
-        });
+        assertThrows(RangeError.class, () -> chance.range(func, 6));
 
     }
 
     @Test
     public void shouldGiveOne() {
-        Map<String, Object> options = new HashMap<>();
         Chance chance = new Chance();
-        String[] arr = {"desert", "forest", "ocean", "zoo", "farm", "pet", "grassland"};
-        assertNotNull(chance.pickone(Arrays.asList(arr)));
-
+        assertNotNull(chance.pickone(List.of("desert", "forest", "ocean", "zoo", "farm", "pet", "grassland")));
     }
 
     @Test
@@ -150,7 +142,7 @@ public class ChanceTest {
         options.put("likelihood", 130);
         Chance chance = new Chance();
         Supplier<Object> func = () -> chance.natural(new HashMap<>());
-        List<Integer> list = (List<Integer>) chance.n(func, 10);
+        List<Integer> list = chance.n(func, 10);
         assertTrue(10 == list.size());
 
     }
@@ -448,9 +440,9 @@ public class ChanceTest {
 
     @Test
     public void shouldReturnCodicefiscale() {
-        Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
-        //assertEquals("Milk Way", chance.cf(options));
+//        Map<String, Object> options = new HashMap<>();
+//        Chance chance = new Chance();
+//        assertEquals("Milk Way", chance.cf(options));
     }
 
     @Test

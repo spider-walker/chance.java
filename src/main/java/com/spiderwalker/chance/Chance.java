@@ -30,7 +30,7 @@ public class Chance {
         data = readJson();
     }
 
-    public File readfile() {
+    public File readFile() {
         File file = null;
         try {
             ClassLoader classLoader = getClass().getClassLoader();
@@ -43,15 +43,15 @@ public class Chance {
         return file;
     }
 
-    public Map readJson() {
-        Map jsonMap = null;
+    public Map<String, Object> readJson() {
+        Map<String, Object> jsonMap = new HashMap<>();
         try {
             // create Gson instance
             Gson gson = new Gson();
-            Reader reader = Files.newBufferedReader(Paths.get(readfile().getAbsolutePath()));
+            Reader reader = Files.newBufferedReader(Paths.get(readFile().getAbsolutePath()));
 
             // convert JSON file to map
-            jsonMap = gson.fromJson(reader, Map.class);
+            jsonMap = (Map<String, Object>) gson.fromJson(reader, Map.class);
             reader.close();
 
         } catch (JsonParseException | IOException ex) {
@@ -495,9 +495,8 @@ public class Chance {
         testRange(length < 0, "Chance: Length cannot be less than zero.");
         Map<String, Object> finalOptions = options;
         Supplier characterFn = () -> character(finalOptions);
-        var content = n(characterFn, length);
 
-        return content;
+        return n(characterFn, length);
     }
     // -- End Basics --
 
@@ -634,15 +633,10 @@ public class Chance {
             return new Object[0];
         }
 
-        if (arr.length == 0) {
-            throw new RangeError("Chance: Cannot pickset() from an empty array");
-        }
-        if (count < 0) {
-            throw new RangeError("Chance: Count must be a positive number");
-        }
+        testRange(arr.length == 0, "Chance: Cannot pickset() from an empty array");
+        testRange(count < 0, "Chance: Count must be a positive number");
         if (count == 1) {
-            Object[] items = {pickone(Arrays.asList(arr))};
-            return items;
+            return new Object[]{pickone(Arrays.asList(arr))};
         }
         if (count == arr.length || count > arr.length) {
             return arr;
