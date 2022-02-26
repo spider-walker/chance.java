@@ -3,6 +3,9 @@ package com.spiderwalker.chance;
 
 import com.spiderwalker.chance.constant.Constants;
 import com.spiderwalker.chance.exception.RangeError;
+import com.spiderwalker.chance.util.FileUtils;
+import com.spiderwalker.chance.util.ListUtils;
+import com.spiderwalker.chance.util.NumberUtils;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -11,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,82 +23,70 @@ public class ChanceTest {
 
     @Test
     public void shouldLoadFile() {
-        Chance chance = new Chance();
-        File file = chance.readFile();
+        File file = FileUtils.readFile();
         assertTrue(file.exists());
-
     }
 
     @Test
     public void shouldReadJsonFile() {
-        Chance chance = new Chance();
-        Map<String, ?> map = chance.readJson();
+        Map<String, ?> map = FileUtils.readJson();
         assertEquals(27, map.size());
     }
 
     @Test
-    public void shouldGeneratteListOfObjects() {
-        Map<String, Object> options = new HashMap<>();
-        options.put("likelihood", 30);
-        Chance chance = new Chance();
-        Supplier<Object> func = () -> chance.bool(options);
-        List<Object> list = chance.range(func, 6);
-        assertEquals(6, list.size());
-    }
-
-    @Test
-    public void shoudlGenerateRandomInt() {
-        Chance chance = new Chance();
-        int upper = 12;
-        int lower = 11;
-        int result = chance.random(lower, upper);
-        assertTrue(result >= lower && result <= upper);
-
-    }
-
-    @Test
     public void shouldReturnWeekDay() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         String result = chance.weekday(null);
         assertNotNull(result);
 
     }
+
     @Test
     public void shouldReturnTimestamp() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         String result = String.valueOf(chance.timestamp(null));
         assertNotNull(result);
     }
+
     @Test
     public void shouldReturnHour() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         String result = String.valueOf(chance.hour(null));
         assertNotNull(result);
     }
+
     @Test
-    public void shouldReturnAmpm() {
-        Chance chance = new Chance();
+    public void shouldReturnAmPm() {
+        Chance chance = Chance.getInstance();
         String result = String.valueOf(chance.ampm());
         assertNotNull(result);
     }
+
     @Test
     public void shouldReturnStreet() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         String result = String.valueOf(chance.street(null));
-        System.out.println(result);
         assertNotNull(result);
     }
 
     @Test
     public void shouldReturnColor() {
-        Chance chance = new Chance();
-        String result = String.valueOf(chance.color());
-        System.out.println(result);
+        Chance chance = Chance.getInstance();
+        Map<String, Object> options = new HashMap<>();
+        options.put("format", "hex");
+        String result = String.valueOf(chance.color(options));
+        assertEquals(7, result.length());
+        options.put("format", "rgb");
+        result = String.valueOf(chance.color(options));
+        assertNotNull(result);
+        options.put("format", "name");
+        result = String.valueOf(chance.color(options));
         assertNotNull(result);
     }
+
     @Test
     public void shouldReturnZip() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         String result = String.valueOf(chance.zip(null));
         assertNotNull(result);
         Map<String, Object> options = new HashMap<>();
@@ -101,10 +94,11 @@ public class ChanceTest {
         result = String.valueOf(chance.zip(options));
         assertNotNull(result);
     }
+
     @Test
-    public void shoudlGenerateRandomInteger() {
+    public void shouldGenerateRandomInteger() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         int upper = Constants.MAX_INT;
         int lower = 0;
         options.put("min", lower);
@@ -118,44 +112,56 @@ public class ChanceTest {
     public void shouldThrowError() {
         Map<String, Object> options = new HashMap<>();
         options.put("likelihood", 130);
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         Supplier<Object> func = () -> chance.bool(options);
-        assertThrows(RangeError.class, () -> chance.range(func, 6));
+        assertThrows(RangeError.class, () -> ListUtils.range(func, 6));
 
     }
 
     @Test
+    public void shouldAddMixins() {
+        Map<String, Supplier> options = new HashMap<>();
+        Chance chance = Chance.getInstance();
+        Supplier d4 = () -> chance.diceFn(1,2);
+        options.put("d12", d4);
+        chance.mixins(options);
+        Map<String,Supplier<Object>> fns=chance.mixin;
+        Supplier supp= fns.get("d12");
+        assertTrue((int)supp.get()>0);
+
+    }
+
+
+    @Test
     public void shouldGiveOne() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertNotNull(chance.pickone(List.of("desert", "forest", "ocean", "zoo", "farm", "pet", "grassland")));
     }
 
     @Test
-    public void shouldPickEmicon() {
-        Chance chance = new Chance();
+    public void shouldPickEmoticon() {
+        Chance chance = Chance.getInstance();
         assertFalse(chance.emotion().isEmpty());
     }
 
     @Test
     public void shouldNItems() {
-        Map<String, Object> options = new HashMap<>();
-        options.put("likelihood", 130);
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         Supplier<Object> func = () -> chance.natural(new HashMap<>());
         List<Integer> list = chance.n(func, 10);
-        assertTrue(10 == list.size());
+        assertEquals(10, list.size());
 
     }
 
     @Test
     public void shouldIDNumberFoBrazilCompanies() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertFalse(chance.cnpj().isEmpty());
     }
 
     @Test
     public void shouldPad() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertEquals("01234", chance.pad(1234, 5, "0"));
         assertEquals("0000001234", chance.pad(1234, 10, "0"));
         assertEquals("1234", chance.pad(1234, 4, "0"));
@@ -165,17 +171,13 @@ public class ChanceTest {
     @Test
     public void shouldPickItemsInArray() {
         Object[] array1 = new Object[0];
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertEquals(0, chance.pickset(array1, 0).length);
 
-        assertThrows(RangeError.class, () -> {
-            chance.pickset(array1, 4);
-        });
+        assertThrows(RangeError.class, () -> chance.pickset(array1, 4));
         Object[] array2 = {1, 4, 5};
 
-        assertThrows(RangeError.class, () -> {
-            chance.pickset(array2, -4);
-        });
+        assertThrows(RangeError.class, () -> chance.pickset(array2, -4));
         Object[] array3 = {1, 4, 5};
 
         assertEquals(1, chance.pickset(array3, 1).length);
@@ -187,7 +189,7 @@ public class ChanceTest {
     @Test
     public void shouldShuffleItemsInArray() {
         Object[] array1 = new Object[0];
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertEquals(0, chance.shuffle(array1).length);
 
         Object[] array3 = {1, 4, 5};
@@ -200,30 +202,26 @@ public class ChanceTest {
 
     @Test
     public void shouldReturnSingleItem() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
 
         Object[] array1 = {1, 4, 5};
         int[] weights1 = {1, 4};
 
-        assertThrows(RangeError.class, () -> {
-            chance.weighted(array1, weights1, true);
-        });
+        assertThrows(RangeError.class, () -> chance.weighted(array1, weights1, true));
 
         Object[] array2 = {1, 4, 5, 8, 5, 6};
         int[] weights2 = {1, 1, 1, 1, 1, 2};
 
-        assertNotNull(chance.weighted(array2, weights2, true));
+        chance.weighted(array2, weights2, true);
     }
 
     @Test
     public void shouldReturnSingleAnimal() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
 
         Map<String, Object> options = new HashMap<>();
         options.put("type", "");
-        assertThrows(RangeError.class, () -> {
-            chance.animal(options);
-        });
+        assertThrows(RangeError.class, () -> chance.animal(options));
 
         options.put("type", "ocean");
 
@@ -233,7 +231,7 @@ public class ChanceTest {
 
     @Test
     public void shouldReturnARandomCharacter() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
 
         Map<String, Object> options = new HashMap<>();
         options.put("casing", "lower");
@@ -245,35 +243,32 @@ public class ChanceTest {
     }
 
     @Test
-    public void shouldReturnArandomFloatingPointNumber() {
-        Chance chance = new Chance();
+    public void shouldReturnARandomFloatingPointNumber() {
+        Chance chance = Chance.getInstance();
 
         Map<String, Object> options1 = new HashMap<>();
         options1.put("fixed", 4);
         float result = chance.floating(options1);
-
+        String regex = "[-+]?([0-9]*\\.[0-9]+|[0-9]+)";
+        assertRegex(regex, result);
     }
 
     @Test
     public void shouldReturnAPrimeNumber() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
 
         Map<String, Object> options = new HashMap<>();
         options.put("min", -10);
-        assertThrows(RangeError.class, () -> {
-            chance.prime(options);
-        });
+        assertThrows(RangeError.class, () -> chance.prime(options));
 
         options.put("min", 10);
         options.put("max", 5);
-        assertThrows(RangeError.class, () -> {
-            chance.prime(options);
-        });
+        assertThrows(RangeError.class, () -> chance.prime(options));
     }
 
     @Test
     public void shouldReturnRandomLetter() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
 
         Map<String, Object> options = new HashMap<>();
         assertNotNull(chance.letter(options));
@@ -281,15 +276,13 @@ public class ChanceTest {
     }
 
     @Test
-    public void shouldReturnaRandomHexNumberAsString() {
-        Chance chance = new Chance();
+    public void shouldReturnARandomHexNumberAsString() {
+        Chance chance = Chance.getInstance();
 
         Map<String, Object> options = new HashMap<>();
         options.put("min", 10000);
         options.put("max", 5);
-        assertThrows(RangeError.class, () -> {
-            chance.hex(options);
-        });
+        assertThrows(RangeError.class, () -> chance.hex(options));
         options.put("max", 500000);
         assertNotNull(chance.hex(options));
 
@@ -297,27 +290,24 @@ public class ChanceTest {
 
     @Test
     public void shouldReturnRandomString() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
 
         Map<String, Object> options = new HashMap<>();
         options.put("length", -2);
-        assertThrows(RangeError.class, () -> {
-            chance.string(options);
-        });
+        assertThrows(RangeError.class, () -> chance.string(options));
         options.put("length", 6);
         assertEquals(6, chance.string(options).length());
     }
 
     @Test
     public void shouldIsraelId() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertEquals(23, chance.israelId().length());
     }
 
     @Test
     public void shouldReturnMonths() {
-        Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         List<Map<String, Object>> months = chance.months();
         assertEquals(12, months.size());
     }
@@ -325,7 +315,7 @@ public class ChanceTest {
     @Test
     public void shouldReturnAge() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         int age = chance.age(options);
         assertTrue(age > 18 && age < 65);
 
@@ -341,7 +331,7 @@ public class ChanceTest {
     @Test
     public void shouldReturnMonth() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertThrows(RangeError.class, () -> {
             options.put("min", -1);
             chance.month(options);
@@ -361,7 +351,7 @@ public class ChanceTest {
         assertEquals("March", chance.month(options));
 
         options.put("raw", true);
-        Map<String, Object> map = new HashMap();
+        Map<String, Object> map = new HashMap<>();
         map.put("name", "March");
         map.put("short_name", "Mar");
         map.put("numeric", "03");
@@ -370,23 +360,28 @@ public class ChanceTest {
     }
 
     @Test
-    public void shouldReturnmrz() {
+    public void shouldReturnMrz() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
-        //assertEquals(23,chance.mrz(options).length());
+        Chance chance = Chance.getInstance();
+        try {
+            assertEquals(23, chance.mrz(options).length());
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     @Test
     public void shouldReturnDate() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertNotNull(chance.date(options));
     }
 
     @Test
     public void shouldReturnYear() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         int min = LocalDateTime.now().getYear();
         int year = chance.year(options);
         assertTrue(year >= min && year < (min + 100));
@@ -399,96 +394,100 @@ public class ChanceTest {
     @Test
     public void shouldReturnMonthObject() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         String monthString = chance.month(options);
         assertNotNull(monthString);
 
         options.put("raw", true);
         Map<String, Object> monthMap = chance.month(options);
-
+        assertTrue(monthMap.size() == 4);
     }
 
     @Test
     public void shouldCapitalize() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertEquals("Milk way", chance.capitalize("milk way"));
     }
 
     @Test
     public void shouldReturnString() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertNotNull(chance.string(null));
     }
 
     @Test
     public void shouldReturnWord() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertFalse(chance.word(null).isEmpty());
     }
 
     @Test
     public void shouldReturnFirst() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertFalse(chance.first(null).isEmpty());
     }
 
     @Test
     public void shouldReturnLast() {
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertFalse(chance.last(null).isEmpty());
     }
 
     @Test
     public void shouldReturnCodicefiscale() {
-//        Map<String, Object> options = new HashMap<>();
-//        Chance chance = new Chance();
-//        assertEquals("Milk Way", chance.cf(options));
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = Chance.getInstance();
+        try{
+            assertEquals("Milk Way", chance.cf(options));
+        }catch(Exception e){
+           System.out.println(e.getMessage());
+        }
     }
 
     @Test
     public void shouldReturnBirthday() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertNotNull(chance.birthday(options));
     }
 
     @Test
     public void shouldReturnNote() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertNotNull(chance.note(options));
     }
 
     @Test
     public void shouldReturnDice() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         Supplier<Object> func = () -> chance.natural(options);
-        Supplier d4 = chance.d4;
+        Supplier<Integer> d4 = chance.d4;
         List<Integer> list = (List<Integer>) chance.n(func, d4);
         assertTrue(list.size() > 0);
 
-        Supplier d6 = chance.d6;
+        Supplier<Integer> d6 = chance.d6;
         list = (List<Integer>) chance.n(func, d6);
         assertTrue(list.size() > 0);
 
-        Supplier d8 = chance.d8;
+        Supplier<Integer> d8 = chance.d8;
         list = (List<Integer>) chance.n(func, d8);
         assertTrue(list.size() > 0);
 
-        Supplier d10 = chance.d10;
+        Supplier<Integer> d10 = chance.d10;
         list = (List<Integer>) chance.n(func, d10);
         assertTrue(list.size() > 0);
 
-        Supplier d20 = chance.d20;
+        Supplier<Integer> d20 = chance.d20;
         list = (List<Integer>) chance.n(func, d20);
         assertTrue(list.size() > 0);
 
-        Supplier d30 = chance.d30;
+        Supplier<Integer> d30 = chance.d30;
         list = (List<Integer>) chance.n(func, d30);
         assertTrue(list.size() > 0);
 
-        Supplier d100 = chance.d100;
+        Supplier<Integer> d100 = chance.d100;
         list = (List<Integer>) chance.n(func, d100);
         assertTrue(list.size() > 0);
     }
@@ -497,42 +496,38 @@ public class ChanceTest {
     @Test
     public void shouldReturnMidiNote() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
-        assertNotNull(chance.midi_note(options));
+        Chance chance = Chance.getInstance();
+        assertTrue(NumberUtils.isNumeric(chance.midi_note(options)));
     }
 
     @Test
     public void shouldReturnChordQuality() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertNotNull(chance.chord_quality(options));
     }
 
     @Test
     public void shouldReturnChord() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertNotNull(chance.chord(options));
     }
 
     @Test
     public void shouldReturnTempo() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
-        assertNotNull(chance.tempo(options));
+        Chance chance = Chance.getInstance();
+        assertTrue(NumberUtils.isNumeric(chance.tempo(options)));
     }
 
     @Test
     public void shouldReturnRpg() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
-        assertThrows(RangeError.class, () -> {
-            chance.rpg(options);
-        });
+        Chance chance = Chance.getInstance();
+        assertThrows(RangeError.class, () -> chance.rpg(options));
         options.put("thrown", "3dx");
-        assertThrows(RangeError.class, () -> {
-            chance.rpg(options);
-        });
+        assertThrows(RangeError.class, () -> chance.rpg(options));
 
         options.put("thrown", "5d6");
         Map<Integer, Integer> rolls = chance.rpg(options);
@@ -547,16 +542,27 @@ public class ChanceTest {
     @Test
     public void shouldReturnLuhnCheck() {
 
-        Chance chance = new Chance();
-        assertNotNull(chance.luhn_check(7788));
+        Chance chance = Chance.getInstance();
+        assertFalse(chance.luhn_check(7788));
     }
 
     @Test
     public void shouldReturnFile() {
         Map<String, Object> options = new HashMap<>();
-        Chance chance = new Chance();
+        Chance chance = Chance.getInstance();
         assertNotNull(chance.file(options));
+    }
 
+    @Test
+    public void shouldReturnFbid() {
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = Chance.getInstance();
+        assertNotNull(chance.fbid());
+    }
 
+    void assertRegex(String regex, Object toTest) {
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(String.valueOf(toTest));
+        assertTrue(matcher.find());
     }
 }

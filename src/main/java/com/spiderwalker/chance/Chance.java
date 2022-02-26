@@ -1,19 +1,16 @@
 package com.spiderwalker.chance;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonParseException;
 import com.spiderwalker.chance.constant.Constants;
 import com.spiderwalker.chance.exception.RangeError;
+import com.spiderwalker.chance.util.*;
 
 import java.awt.*;
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.time.*;
-import java.util.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -24,82 +21,21 @@ import java.util.stream.Stream;
 public class Chance {
     public String VERSION = "1.1.8";
     Map<String, Object> data;
-    Random rand = new Random();
+    public Map<String, Supplier<Object>> mixin= new HashMap<>();
+
+    private static Chance instance = null;
+
+    public static Chance getInstance() {
+        if (instance == null) {
+            instance = new Chance();
+        }
+        return instance;
+    }
 
     public Chance() {
-        data = readJson();
+        data = FileUtils.readJson();
     }
 
-    public File readFile() {
-        File file = null;
-        try {
-            ClassLoader classLoader = getClass().getClassLoader();
-            String fileName = "data.json";
-            file = new File(Objects.requireNonNull(classLoader.getResource(fileName)).getFile());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return file;
-    }
-
-    public Map<String, Object> readJson() {
-        Map<String, Object> jsonMap = new HashMap<>();
-        try {
-            // create Gson instance
-            Gson gson = new Gson();
-            Reader reader = Files.newBufferedReader(Paths.get(readFile().getAbsolutePath()));
-
-            // convert JSON file to map
-            jsonMap = (Map<String, Object>) gson.fromJson(reader, Map.class);
-            reader.close();
-
-        } catch (JsonParseException | IOException ex) {
-            ex.printStackTrace();
-        }
-        return jsonMap;
-    }
-
-    public Map<String, Object> initOptions(Map<String, Object> options, Map<String, Object> defaults) {
-        if (options == null) {
-            options = new HashMap<>();
-        }
-        if (defaults != null) {
-            for (String key : defaults.keySet()) {
-                if (options.get(key) == null) {
-                    options.put(key, defaults.get(key));
-                }
-            }
-        }
-
-        return options;
-    }
-
-    public List<Object> range(Supplier<Object> func, int size) {
-        List<Object> s = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            s.add(func.get());
-        }
-        return s;
-    }
-
-    public void testRange(boolean test, String errorMessage) {
-        if (test) {
-            throw new RangeError(errorMessage);
-        }
-    }
-
-    public int random(int min, int max) {
-        return rand.nextInt(max - min) + min;
-    }
-
-    public int random() {
-        return rand.nextInt();
-    }
-
-    public long random(long min, long max) {
-        return rand.nextInt((int) (max - min)) + min;
-    }
 
     /**
      * Return a random bool, either true or false
@@ -113,7 +49,7 @@ public class Chance {
         // likelihood of success (true)
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("likelihood", 50);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
         // Note, we could get some minor perf optimizations by checking range
         // prior to initializing defaults, but that makes code a bit messier
@@ -122,11 +58,11 @@ public class Chance {
         // Since the options initialization should be minor computationally,
         // decision made for code cleanliness intentionally. This is mentioned
         // here as it's the first occurrence, will not be mentioned again.
-        testRange(
-                (int) get(options, "likelihood") < 0 || (int) get(options, "likelihood") > 100,
+        ErrorUtils.testRange(
+                (int) MapUtils.get(options, "likelihood") < 0 || (int) MapUtils.get(options, "likelihood") > 100,
                 "Chance: Likelihood accepts values from 0 to 100.");
 
-        return Math.random() * 100 < (int) get(options, "likelihood");
+        return NumberUtils.random() * 100 < (int) MapUtils.get(options, "likelihood");
     }
 
     public <T> T animals() {
@@ -135,18 +71,18 @@ public class Chance {
 
     public <T> T animal(Map<String, Object> options) {
         // returns a random animal
-        options = initOptions(options, new HashMap<>());
-        Map<String, Object> animals = animals();
+        options = MapUtils.initOptions(options, new HashMap<>());
         List<String> animalType = Stream.of("desert", "forest", "ocean", "zoo", "farm", "pet", "grassland")
                 .collect(Collectors.toList());
+        String type = MapUtils.get(options, "type");
 
-        if (get(options, "type") != null) {
+        if (type != null) {
             // if user does not put in a valid animal type, user will get an error
-            boolean hasType = animalType.contains(String.valueOf(get(options, "type")).toLowerCase());
-            testRange(
+            boolean hasType = animalType.contains(StringUtils.toLowerCase(type));
+            ErrorUtils.testRange(
                     !hasType,
                     "Please pick from desert, ocean, grassland, forest, zoo, pets, farm.");
-            List<String> animaList = ((Map<String, List<String>>) animals()).get((String) get(options, "type"));
+            List<String> animaList = ((Map<String, List<String>>) animals()).get((String) MapUtils.get(options, "type"));
             // if user does put in valid animal type, will return a random animal of that
             // type
             return pickone(animaList);
@@ -171,38 +107,37 @@ public class Chance {
     public char character(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("casing", "");
-        options = initOptions(options, defaults);
-
+        options = MapUtils.initOptions(options, defaults);
 
         String letters;
         String pool = "";
 
-        if (get(options, "casing").toString() == "lower") {
+        if (Objects.equals(MapUtils.get(options, "casing").toString(), "lower")) {
             letters = Constants.CHARS_LOWER;
-        } else if (get(options, "casing") == "upper") {
+        } else if (MapUtils.get(options, "casing") == "upper") {
             letters = Constants.CHARS_UPPER;
         } else {
             letters = Constants.CHARS_LOWER + Constants.CHARS_UPPER;
         }
 
-        if (get(options, "pool") == null) {
-            if (get(options, "alpha") != null) {
+        if (MapUtils.get(options, "pool") == null) {
+            if (MapUtils.get(options, "alpha") != null) {
                 pool += letters;
             }
-            if (get(options, "numeric") != null) {
+            if (MapUtils.get(options, "numeric") != null) {
                 pool += Constants.NUMBERS;
             }
-            if (get(options, "symbols") != null) {
+            if (MapUtils.get(options, "symbols") != null) {
                 pool += Constants.SYMBOLS;
             }
             if (pool.isEmpty()) {
                 pool = letters + Constants.NUMBERS + Constants.SYMBOLS;
             }
         } else {
-            pool = get(options, "pool").toString();
+            pool = MapUtils.get(options, "pool").toString();
         }
 
-        return pool.charAt(random(0, pool.length() - 1));
+        return pool.charAt(NumberUtils.random(0, pool.length() - 1));
     }
 
     public char character(String pool) {
@@ -235,19 +170,19 @@ public class Chance {
         defaults.put("fixed", 4);
         defaults.put("min", -max);
         defaults.put("max", max);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        int fixed = get(options, "fixed");
-        float min = get(options, "min");
-        max = get(options, "max");
+        int fixed = MapUtils.get(options, "fixed");
+        float min = MapUtils.get(options, "min");
+        max = MapUtils.get(options, "max");
 
-        float random = min + rand.nextFloat() * (max - min);
+        float random = NumberUtils.random(min, max);
 
         return Float.parseFloat(String.format("%." + fixed + "f", random));
     }
 
     public float floating(int min, float max, int fixed) {
-        float random = min + rand.nextFloat() * (max - min);
+        float random = NumberUtils.random(min, max);
 
         return Float.parseFloat(String.format("%." + fixed + "f", random));
     }
@@ -269,10 +204,10 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("min", Constants.MIN_INT);
         defaults.put("max", Constants.MAX_INT);
-        options = initOptions(options, defaults);
-        testRange((int) get(options, "min") > (int) get(options, "max"), "Chance: Min cannot be greater than Max.");
+        options = MapUtils.initOptions(options, defaults);
+        ErrorUtils.testRange((int) MapUtils.get(options, "min") > (int) MapUtils.get(options, "max"), "Chance: Min cannot be greater than Max.");
 
-        return random(get(options, "min"), get(options, "max"));
+        return NumberUtils.random(MapUtils.get(options, "min"), MapUtils.get(options, "max"));
     }
 
     public int integer(int min, int max) {
@@ -289,40 +224,35 @@ public class Chance {
      * chance.natural(1, 3});
      * would return either 1, 2, or 3.
      * <p>
-     * param {Object} [options={}] can specify a min and/or max or a numerals
+     * param options can specify a min and/or max or a numerals
      * count.
-     * throws {RangeError} min cannot be greater than max
-     * returns {Number} a single random integer number
+     * throws RangeError min cannot be greater than max
+     * returns Number a single random integer number
      */
-
-    boolean isNumeric(Object object) {
-        return String.valueOf(object).chars().allMatch(Character::isDigit);
-    }
-
     public int natural(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("min", 0);
         defaults.put("max", Constants.MAX_INT);
-        options = initOptions(options, defaults);
-        if (get(options, "numerals") != null && get(options, "numerals") == "number") {
-            testRange((int) get(options, "numerals") < 1, "Chance: Numerals cannot be less than one.");
-            options.put("min", Math.pow(10, (int) get(options, "numerals") - 1));
-            options.put("max", Math.pow(10, get(options, "numerals")) - 1);
+        options = MapUtils.initOptions(options, defaults);
+        if (MapUtils.get(options, "numerals") != null && MapUtils.get(options, "numerals") == "number") {
+            ErrorUtils.testRange((int) MapUtils.get(options, "numerals") < 1, "Chance: Numerals cannot be less than one.");
+            options.put("min", Math.pow(10, (int) MapUtils.get(options, "numerals") - 1));
+            options.put("max", Math.pow(10, MapUtils.get(options, "numerals")) - 1);
         }
-        testRange((int) get(options, "min") < 0, "Chance: Min cannot be less than zero.");
+        ErrorUtils.testRange((int) MapUtils.get(options, "min") < 0, "Chance: Min cannot be less than zero.");
 
-        if (get(options, "exclude") != null) {
-            testRange(!get(options, "exclude").getClass().isArray(), "Chance: exclude must be an array.");
+        if (MapUtils.get(options, "exclude") != null) {
+            ErrorUtils.testRange(!MapUtils.get(options, "exclude").getClass().isArray(), "Chance: exclude must be an array.");
 
-            Object[] exclude = get(options, "exclude");
+            Object[] exclude = MapUtils.get(options, "exclude");
 
             for (Object exclusion : exclude) {
-                testRange(!isNumeric(exclusion), "Chance: exclude must be numbers.");
+                ErrorUtils.testRange(NumberUtils.isNumeric(exclusion), "Chance: exclude must be numbers.");
             }
             Map<String, Object> naturalDefaults = new HashMap<>();
-            naturalDefaults.put("max", (int) get(options, "max") - (int) get(options, "min") - exclude.length);
+            naturalDefaults.put("max", (int) MapUtils.get(options, "max") - (int) MapUtils.get(options, "min") - exclude.length);
 
-            int random = (int) get(options, "min") + natural(naturalDefaults);
+            int random = (int) MapUtils.get(options, "min") + natural(naturalDefaults);
 
             Integer[] sortedExclusions = Arrays.asList(exclude).toArray(new Integer[0]);
 
@@ -354,7 +284,7 @@ public class Chance {
      * Determine whether a given number is prime or not.
      */
     public boolean isPrime(double i2) {
-        testRange(i2 <= 1, "Only positive numbers above 1 can be prime.");
+        ErrorUtils.testRange(i2 <= 1, "Only positive numbers above 1 can be prime.");
         double limit = Math.sqrt(i2);
 
         for (int i = 2; i <= limit; i++) {
@@ -379,11 +309,11 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("min", 0);
         defaults.put("max", 10000);
-        options = initOptions(options, defaults);
-        int min = get(options, "min");
-        int max = get(options, "max");
-        testRange(min < 0, "Chance: Min cannot be less than zero.");
-        testRange(min > max, "Chance: Min cannot be greater than Max.");
+        options = MapUtils.initOptions(options, defaults);
+        int min = MapUtils.get(options, "min");
+        int max = MapUtils.get(options, "max");
+        ErrorUtils.testRange(min < 0, "Chance: Min cannot be less than zero.");
+        ErrorUtils.testRange(min > max, "Chance: Min cannot be greater than Max.");
 
         List<Float> primes = new ArrayList<>((List<Float>) data.get("primes"));
 
@@ -416,10 +346,10 @@ public class Chance {
         defaults.put("min", 0);
         defaults.put("max", Integer.MAX_VALUE);
         defaults.put("casing", "lower");
-        options = initOptions(options, defaults);
-        testRange((int) get(options, "min") < 0, "Chance: Min cannot be less than zero.");
+        options = MapUtils.initOptions(options, defaults);
+        ErrorUtils.testRange((int) MapUtils.get(options, "min") < 0, "Chance: Min cannot be less than zero.");
         int integer = natural(options);
-        if (get(options, "casing") == "upper") {
+        if (MapUtils.get(options, "casing") == "upper") {
             return Integer.toUnsignedString(integer, 16).toUpperCase();
         }
         return Integer.toUnsignedString(integer, 16);
@@ -428,11 +358,11 @@ public class Chance {
     public String letter(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("casing", "lower");
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
         defaults.put("pool", "abcdefghijklmnopqrstuvwxyz");
         String letter = String.valueOf(character(options));
-        if (get(options, "casing") == "upper") {
+        if (MapUtils.get(options, "casing") == "upper") {
             letter = letter.toUpperCase();
         }
         return letter;
@@ -449,17 +379,17 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("min", 5);
         defaults.put("max", 20);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        if (get(options, "length") == null) {
-            options.put("length", random(get(options, "min"), get(options, "max")));
+        if (MapUtils.get(options, "length") == null) {
+            options.put("length", NumberUtils.random(MapUtils.get(options, "min"), MapUtils.get(options, "max")));
         }
 
-        testRange((int) get(options, "length") < 0, "Chance: Length cannot be less than zero.");
+        ErrorUtils.testRange((int) MapUtils.get(options, "length") < 0, "Chance: Length cannot be less than zero.");
 
         Supplier<Object> func = () -> character(new HashMap<>());
 
-        int length = get(options, "length");
+        int length = MapUtils.get(options, "length");
         List text = n(func, length);
         StringBuilder sb = new StringBuilder();
         for (Object s : text) {
@@ -488,11 +418,11 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("min", 5);
         defaults.put("max", 20);
-        defaults.put("length", random(5, 20));
+        defaults.put("length", NumberUtils.random(5, 20));
 
-        options = initOptions(options, options);
-        int length = get(options, "length");
-        testRange(length < 0, "Chance: Length cannot be less than zero.");
+        options = MapUtils.initOptions(options, defaults);
+        int length = MapUtils.get(options, "length");
+        ErrorUtils.testRange(length < 0, "Chance: Length cannot be less than zero.");
         Map<String, Object> finalOptions = options;
         Supplier characterFn = () -> character(finalOptions);
 
@@ -512,11 +442,12 @@ public class Chance {
                 .collect(Collectors.joining(" "));
     }
 
-    public String mixin(List<Supplier<?>> fns) {
-        for (Supplier<?> supplier : fns) {
-            //Chance.prototype[func_name] = obj[func_name];
+    public void mixins(Map<String, Supplier> fns) {
+        for (String key : fns.keySet()) {
+//            if (fns.get(key) == null) {
+                mixin.put(key, (Supplier<Object>) fns.get(key));
+//            }
         }
-        return null;
     }
 
     /**
@@ -532,7 +463,7 @@ public class Chance {
      */
     // ToDo
     public List<?> unique(Supplier fn, int num, Map<String, Object> options) {
-        testRange(fn == null,
+        ErrorUtils.testRange(fn == null,
                 "Chance: The first argument must be a function."
         );
 
@@ -545,8 +476,7 @@ public class Chance {
 //            comparator = (Supplier) get(options,"comparator");
 //        }
 //
-        List<Object> arr = new ArrayList<>();
-//        int count = 0;
+        //        int count = 0;
 //                result,
 //                        int MAX_DUPLICATES = num * 50,
 //                params = slice.call(arguments, 2);
@@ -560,11 +490,11 @@ public class Chance {
 //                count = 0;
 //            }
 //
-//            testRange(                ++count > MAX_DUPLICATES,
+//            ErrorUtils.testRange(                ++count > MAX_DUPLICATES,
 //                    "Chance: num is likely too large for sample set"
 //            );
 //        }
-        return arr;
+        return new ArrayList<>();
     }
 
     /**
@@ -583,7 +513,7 @@ public class Chance {
     }
 
     public <T> T n(Supplier fn, int size) {
-        testRange(fn == null, "Chance: The first argument must be a function.");
+        ErrorUtils.testRange(fn == null, "Chance: The first argument must be a function.");
         // Providing a negative count should result in a noop.
 
         if (size < 0) {
@@ -621,7 +551,7 @@ public class Chance {
 
     // Given an list, returns a single random element
     public <T> T pickone(List<?> list) {
-        testRange(list.size() == 0, "Chance: Cannot pickone() from an empty array");
+        ErrorUtils.testRange(list.size() == 0, "Chance: Cannot pickone() from an empty array");
         Map<String, Object> options = new HashMap<>();
         options.put("max", list.size() - 1);
         return (T) list.get(natural(options));
@@ -633,8 +563,8 @@ public class Chance {
             return new Object[0];
         }
 
-        testRange(arr.length == 0, "Chance: Cannot pickset() from an empty array");
-        testRange(count < 0, "Chance: Count must be a positive number");
+        ErrorUtils.testRange(arr.length == 0, "Chance: Cannot pickset() from an empty array");
+        ErrorUtils.testRange(count < 0, "Chance: Count must be a positive number");
         if (count == 1) {
             return new Object[]{pickone(Arrays.asList(arr))};
         }
@@ -643,10 +573,9 @@ public class Chance {
         }
         List<Object> picked = new ArrayList<>();
 
-        Random rand = new Random();
         List<Object> givenList = new LinkedList<>(Arrays.asList(arr));
         for (int i = 0; i < count; i++) {
-            int randomIndex = rand.nextInt(givenList.size());
+            int randomIndex = NumberUtils.nextRandomInt(givenList.size());
             Object randomElement = givenList.get(randomIndex);
 
             picked.add(randomElement);
@@ -674,12 +603,12 @@ public class Chance {
         // scan weights array and sum valid entries
         int sum = 0;
 
-        for (var weightIndex = 0; weightIndex < weights.length; ++weightIndex) {
-            int val = 0;
-            if (!isNumeric(weights[weightIndex])) {
+        for (int weight : weights) {
+            int val;
+            if (!NumberUtils.isNumeric(weight)) {
                 throw new RangeError("Chance: All weights must be numbers");
             }
-            val = weights[weightIndex];
+            val = weight;
             sum += val;
         }
 
@@ -687,7 +616,7 @@ public class Chance {
             throw new RangeError("Chance: No valid entries in array weights");
         }
 
-        int selected = random(0, Integer.MAX_VALUE) * sum;
+        int selected = NumberUtils.random(0, Integer.MAX_VALUE) * sum;
 
         // find array entry corresponding to selected value
         int total = 0;
@@ -710,24 +639,23 @@ public class Chance {
             }
         }
 
-        int chosen = (int) arr[chosenIdx];
-        return chosen;
+        return (int) arr[chosenIdx];
     }
     // -- End Helpers --
 
     // -- Text --
     public String paragraph(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        defaults.put("sentences", random(3, 7));
+        defaults.put("sentences", NumberUtils.random(3, 7));
         defaults.put("linebreak", true);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        int count = get(options, "sentences");
+        int count = MapUtils.get(options, "sentences");
         Map<String, Object> finalOptions = options;
         Supplier<String> sentenceFn = () -> sentence(finalOptions);
 
         List<String> sentence_array = n(sentenceFn, count);
-        String separator = (boolean) get(options, "linebreak") ? "\n" : " ";
+        String separator = (boolean) MapUtils.get(options, "linebreak") ? "\n" : " ";
 
         return String.join(separator, sentence_array);
     }
@@ -736,16 +664,16 @@ public class Chance {
     // chaining them together. Such as: http://vq.io/1a5ceOh
     public String sentence(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        defaults.put("min", random(3, 7));
-        defaults.put("words", random(12, 18));
-        defaults.put("punctuation", random(12, 18));
-        options = initOptions(options, defaults);
+        defaults.put("min", NumberUtils.random(3, 7));
+        defaults.put("words", NumberUtils.random(12, 18));
+        defaults.put("punctuation", NumberUtils.random(12, 18));
+        options = MapUtils.initOptions(options, defaults);
 
-        int count = get(options, "words");
-        boolean punctuation = get(options, "punctuation");
+        int count = MapUtils.get(options, "words");
+        boolean punctuation = MapUtils.get(options, "punctuation");
         Map<String, Object> finalOptions = options;
         Supplier<String> wordFn = () -> word(finalOptions);
-        String text = null;
+        String text;
         List<String> word_array = n(wordFn, count);
 
         text = String.join(" ", word_array);
@@ -759,7 +687,7 @@ public class Chance {
         Matcher m = pattern.matcher("softwareTestingHelp.com");
 
         // Make sure punctuation has a usable value
-        if (punctuation != false && m.find()) {
+        if (punctuation && m.find()) {
             punctuate = ".";
         }
 
@@ -773,16 +701,15 @@ public class Chance {
 
     public String syllable(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        defaults.put("syllables", random(1, 3));
-        defaults.put("length", random(2, 3));
+        defaults.put("syllables", NumberUtils.random(1, 3));
+        defaults.put("length", NumberUtils.random(2, 3));
         defaults.put("capitalize", false);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        int length = get(options, "length");
+        int length = MapUtils.get(options, "length");
         String consonants = "bcdfghjklmnprstvwz"; // consonants except hard to speak ones
-        String vowels = "aeiou"; // vowels
-        String all = consonants + vowels;// all
-        String text = "";
+        // vowels
+        StringBuilder text = new StringBuilder();
         String chr = null;
 
         // I'm sure there's a more elegant way to do this, but this works
@@ -794,7 +721,7 @@ public class Chance {
                 characterOptions.put("pool", "all");
 
 
-            } else if (consonants.indexOf(chr) == -1) {
+            } else if (!consonants.contains(chr)) {
                 // Last character was a vowel, now we want a consonant
                 characterOptions.put("pool", "consonants");
             } else {
@@ -804,29 +731,29 @@ public class Chance {
             }
             chr = String.valueOf(character(characterOptions));
 
-            text += chr;
+            text.append(chr);
         }
 
-        if ((boolean) get(options, "capitalize")) {
-            text = capitalize(text);
+        if ((boolean) MapUtils.get(options, "capitalize")) {
+            text = new StringBuilder(capitalize(text.toString()));
         }
 
-        return text;
+        return text.toString();
     }
 
     public String word(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        defaults.put("syllables", random(1, 3));
+        defaults.put("syllables", NumberUtils.random(1, 3));
         defaults.put("capitalize", false);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        testRange(
-                get(options, "syllables") != null && get(options, "length") != null,
+        ErrorUtils.testRange(
+                MapUtils.get(options, "syllables") != null && MapUtils.get(options, "length") != null,
                 "Chance: Cannot specify both syllables AND length."
         );
 
-        int syllables = get(options, "syllables");
-        int length = get(options, "length") == null ? syllables + 1 : (int) get(options, "length");
+        int syllables = MapUtils.get(options, "syllables");
+        int length = MapUtils.get(options, "length") == null ? syllables + 1 : (int) MapUtils.get(options, "length");
         StringBuilder text = new StringBuilder();
 
         if (length > 0) {
@@ -842,7 +769,7 @@ public class Chance {
             }
         }
 
-        if ((boolean) get(options, "capitalize")) {
+        if ((boolean) MapUtils.get(options, "capitalize")) {
             text = Optional.ofNullable(capitalize(text.toString())).map(StringBuilder::new).orElse(null);
         }
 
@@ -851,7 +778,7 @@ public class Chance {
 
     public String word() {
         Map<String, Object> defaults = new HashMap<>();
-        defaults.put("syllables", random(1, 3));
+        defaults.put("syllables", NumberUtils.random(1, 3));
         defaults.put("capitalize", false);
         return word(defaults);
     }
@@ -861,24 +788,24 @@ public class Chance {
     public int age(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("type", "");
-        options = initOptions(options, defaults);
-        int ageRange = 0;
-        String type = get(options, "type");
+        options = MapUtils.initOptions(options, defaults);
+        int ageRange;
+        String type = MapUtils.get(options, "type");
         switch (type) {
             case "child":
-                ageRange = random(0, 12);
+                ageRange = NumberUtils.random(0, 12);
                 break;
             case "teen":
-                ageRange = random(13, 19);
+                ageRange = NumberUtils.random(13, 19);
                 break;
             case "senior":
-                ageRange = random(65, 100);
+                ageRange = NumberUtils.random(65, 100);
                 break;
             case "all":
-                ageRange = random(0, 100);
+                ageRange = NumberUtils.random(0, 100);
                 break;
             default:
-                ageRange = random(18, 65);
+                ageRange = NumberUtils.random(18, 65);
                 break;
         }
 
@@ -888,17 +815,17 @@ public class Chance {
     public LocalDateTime birthday(Map<String, Object> options) {
         var age = age(options);
         LocalDateTime currentYear = LocalDateTime.now();
-        String type = get(options, "type");
+        String type = MapUtils.get(options, "type");
         Map<String, Object> defaults = new HashMap<>();
         if (type != null) {
             defaults.put("minDate", currentYear.minusYears((age + 1)));
             defaults.put("maxDate", currentYear.minusYears((age)));
 
 
-            options = initOptions(options, defaults);
+            options = MapUtils.initOptions(options, defaults);
         } else {
             defaults.put("year", currentYear.getYear() - age);
-            options = initOptions(options, defaults);
+            options = MapUtils.initOptions(options, defaults);
         }
 
         return date(options);
@@ -908,7 +835,7 @@ public class Chance {
     public String cpf(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("formatted", true);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         options.put("max", 9);
         Map<String, Object> finalOptions = options;
         Supplier fn = () -> natural(finalOptions);
@@ -928,7 +855,7 @@ public class Chance {
         }
         String cpf = "" + n.get(0) + n.get(1) + n.get(2) + "." + n.get(3)
                 + n.get(4) + n.get(5) + '.' + n.get(6) + n.get(7) + n.get(8) + "-" + d1 + d2;
-        return (boolean) get(options, "formatted") ? cpf : cpf.replace("\\D", "");
+        return (boolean) MapUtils.get(options, "formatted") ? cpf : cpf.replace("\\D", "");
     }
 
     // ID number for Brazil companies
@@ -959,11 +886,11 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("gender", gender(null));
         defaults.put("nationality", "en");
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         Map<String, Object> firstNames = (Map<String, Object>) data.get("firstNames");
         Map<String, Object> firstNamesGender =
-                (Map<String, Object>) firstNames.get(((String) get(options, "gender")).toLowerCase());
-        List<String> firstNamesNationality = (List<String>) firstNamesGender.get(get(options, "nationality"));
+                (Map<String, Object>) firstNames.get(((String) MapUtils.get(options, "gender")).toLowerCase());
+        List<String> firstNamesNationality = (List<String>) firstNamesGender.get(MapUtils.get(options, "nationality"));
         return pickone(firstNamesNationality);
     }
 
@@ -974,9 +901,9 @@ public class Chance {
     public String profession(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("rank", "false");
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         String rank = "";
-        if ((boolean) get(options, "rank")) {
+        if ((boolean) MapUtils.get(options, "rank")) {
             rank = pickone(Arrays.asList("Apprentice", "Junior", "Senior", "Lead")) + " ";
         }
         return rank + pickone(professions());
@@ -993,25 +920,25 @@ public class Chance {
     public String gender(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("extraGenders", new ArrayList<>());
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         List<String> genders = Arrays.asList("Male", "Female");
-        genders.addAll(get(options, "extraGenders"));
+        genders.addAll(MapUtils.get(options, "extraGenders"));
         return pickone(genders);
     }
 
     public String last(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("nationality", "*");
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         Map<String, Object> lastNames = (Map<String, Object>) data.get("lastNames");
-        if (get(options, "nationality") == "*") {
+        if (MapUtils.get(options, "nationality") == "*") {
             List<String> allLastNames = new ArrayList<>();
             lastNames.forEach((key, k) -> allLastNames.addAll((Collection<? extends String>) lastNames.get(key)));
             return pickone(allLastNames);
         } else {
 
             List<String> lastNamesNationality = (List<String>) lastNames
-                    .get(get(options, "nationality"));
+                    .get(MapUtils.get(options, "nationality"));
             return pickone(lastNamesNationality);
         }
 
@@ -1044,11 +971,10 @@ public class Chance {
             int idx = 0;
             for (String in : input.split("")) {
                 int pos = Arrays.binarySearch(alpha, in);
-                System.out.println(pos);
 
                 if (pos != -1) {
                     character = pos == 0 ? 0 : pos + 9;
-                } else {
+                } else if(NumberUtils.isNumeric(in)){
                     character = Character.getNumericValue(Integer.parseInt(in));
                 }
                 character *= multipliers[idx % multipliers.length];
@@ -1105,28 +1031,28 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("first", first(null));
         defaults.put("last", last(null));
-        defaults.put("passportNumber", random(100000000, 999999999));
+        defaults.put("passportNumber", NumberUtils.random(100000000, 999999999));
         defaults.put("dob", dob.get());
         defaults.put("expiry", expiry.get());
         defaults.put("gender", gender(null).equals("Female") ? "F" : "M");
         defaults.put("issuer", "GBR");
         defaults.put("nationality", "GBR");
 
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         return generate.apply(options);
     }
 
     public String name(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
         String first = first(options);
         String last = last(options);
         String name;
 
-        if (get(options, "middle") != null) {
+        if (MapUtils.get(options, "middle") != null) {
             name = first + ' ' + first(options) + ' ' + last;
-        } else if (get(options, "middle_initial") != null) {
+        } else if (MapUtils.get(options, "middle_initial") != null) {
             Map<String, Object> charDefaults = new HashMap<>();
             charDefaults.put("alpha", true);
             charDefaults.put("casing", "upper");
@@ -1135,11 +1061,11 @@ public class Chance {
             name = first + " " + last;
         }
 
-        if (get(options, "prefix") != null) {
+        if (MapUtils.get(options, "prefix") != null) {
             name = prefix(String.valueOf(options)) + " " + name;
         }
 
-        if (get(options, "suffix") != null) {
+        if (MapUtils.get(options, "suffix") != null) {
             name = name + " " + suffix(options);
         }
 
@@ -1188,9 +1114,9 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("gender", "all");
         defaults.put("full", false);
-        options = initOptions(options, defaults);
-        Map<String, String> map = pickone(name_prefixes(get(options, "gender")));
-        return (boolean) get(options, "full") ?
+        options = MapUtils.initOptions(options, defaults);
+        Map<String, String> map = pickone(name_prefixes(MapUtils.get(options, "gender")));
+        return (boolean) MapUtils.get(options, "full") ?
                 map.get("name") :
                 map.get("abbreviation");
     }
@@ -1216,11 +1142,11 @@ public class Chance {
         defaults.put("dashes", true);
         defaults.put("ssnFour", false);
         defaults.put("pool", "1234567890");
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         String ssn;
-        String dash = (boolean) get(options, "dashes") ? "-" : "";
+        String dash = (boolean) MapUtils.get(options, "dashes") ? "-" : "";
         options.put("length", 4);
-        if (!(boolean) get(options, "ssnFour")) {
+        if (!(boolean) MapUtils.get(options, "ssnFour")) {
             options.put("length", 3);
             ssn = string(options) + dash;
             options.put("length", 2);
@@ -1240,11 +1166,11 @@ public class Chance {
         defaults.put("separatedByWhiteSpace", true);
         defaults.put("onlyLastFour", false);
         defaults.put("aadhar_pool", "1234567890");
-        options = initOptions(options, defaults);
-        String aadhar = null;
-        String whiteSpace = (boolean) get(options, "separatedByWhiteSpace") ? " " : "";
+        options = MapUtils.initOptions(options, defaults);
+        String aadhar;
+        String whiteSpace = (boolean) MapUtils.get(options, "separatedByWhiteSpace") ? " " : "";
         options.put("length", 4);
-        if (!(boolean) get(options, "onlyLastFour")) {
+        if (!(boolean) MapUtils.get(options, "onlyLastFour")) {
             aadhar = string(options) + whiteSpace;
             aadhar += string(options) + whiteSpace;
             aadhar += string(options);
@@ -1257,8 +1183,7 @@ public class Chance {
     // Return the list of available name suffixes
     // @todo introduce internationalization
     public List<Map<String, String>> name_suffixes() {
-        List<Map<String, String>> suffixes = (List<Map<String, String>>) data.get("suffixes");
-        return suffixes;
+        return  (List<Map<String, String>>) data.get("suffixes");
     }
 
     // Alias for name_suffix
@@ -1268,9 +1193,9 @@ public class Chance {
 
     public String name_suffix(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         Map<String, String> map = pickone(name_suffixes());
-        return (boolean) get(options, "full") ?
+        return (boolean) MapUtils.get(options, "full") ?
                 map.get("name") :
                 map.get("abbreviation");
     }
@@ -1322,7 +1247,7 @@ public class Chance {
         defaults.put("length", 3);
         return "A=" + guid().replace("-", "").toUpperCase() + "&E="
                 + hash(defaults)
-                + "&W=" + random(0, 9);
+                + "&W=" + NumberUtils.random(0, 9);
     }
 
     //     // BlackBerry Device PIN
@@ -1356,20 +1281,20 @@ public class Chance {
 
     public String domain(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        return word(options) + "." + (get(options, "tld") != null ? get(options, "tld") : tld());
+        return word(options) + "." + (MapUtils.get(options, "tld") != null ? MapUtils.get(options, "tld") : tld());
     }
 
     public String email(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        options = initOptions(options, defaults);
-        return word(options) + "@" + (get(options, "domain") != null ? get(options, "domain") : domain(options));
+        options = MapUtils.initOptions(options, defaults);
+        return word(options) + "@" + (MapUtils.get(options, "domain") != null ? MapUtils.get(options, "domain") : domain(options));
     }
 
     public String email() {
         Map<String, Object> options = new HashMap<>();
-        return word(options) + "@" + (get(options, "domain") != null ? get(options, "domain") : domain(options));
+        return word(options) + "@" + (MapUtils.get(options, "domain") != null ? MapUtils.get(options, "domain") : domain(options));
     }
 
     public String avatar(Map<String, Object> options) {
@@ -1406,7 +1331,7 @@ public class Chance {
             options = new HashMap<>();
         }
 
-        opts = initOptions(options, opts);
+        opts = MapUtils.initOptions(options, opts);
 
         if (opts.get("email") != null) {
             // Set to a random email
@@ -1471,15 +1396,33 @@ public class Chance {
      *
      * @return [string] color value
      */
+    public String color(Map<String, Object> options) {
+        Map<String, Object> defaults = new HashMap<>();
+        defaults.put("format", "hex");
+        defaults.put("min_red", "hex");
+        defaults.put("min_green", "hex");
+        options = MapUtils.initOptions(options, defaults);
+        int red = NumberUtils.nextRandomInt(256);
+        int green = NumberUtils.nextRandomInt(256);
+        int blue = NumberUtils.nextRandomInt(256);
+        Color randomColour = new Color(red, green, blue);
+
+        String format = MapUtils.get(options, "format");
+        if (Objects.equals(format, "hex")) {
+            return "#" + Integer.toHexString(randomColour.getRGB()).substring(2);
+        }
+        return randomColour.toString();
+    }
+
     public String color() {
 
-        Random randomGenerator = new Random();
-        int red = randomGenerator.nextInt(256);
-        int green = randomGenerator.nextInt(256);
-        int blue = randomGenerator.nextInt(256);
+        int red = NumberUtils.nextRandomInt(256);
+        int green = NumberUtils.nextRandomInt(256);
+        int blue = NumberUtils.nextRandomInt(256);
 
         Color randomColour = new Color(red, green, blue);
-        return randomColour.toString();
+        String hex = "#" + Integer.toHexString(randomColour.getRGB()).substring(2);
+        return hex.toUpperCase();
     }
 
     /**
@@ -1493,7 +1436,6 @@ public class Chance {
      * "it is extremely likely to change over time".
      *
      * @return [string] facebook id
-     * @see ://developers.facebook.com/docs/graph-api/overview/
      * <p>
      * #Examples:
      * ===============================================
@@ -1511,8 +1453,8 @@ public class Chance {
         Map<String, Object> options = new HashMap<>();
         options.put("max", "999999");
         options.put("length", 11);
-        String account = pad(random(111111, 999999), 6, "0");
-        String property = pad(random(11, 99), 2, "0");
+        String account = pad(NumberUtils.random(111111, 999999), 6, "0");
+        String property = pad(NumberUtils.random(11, 99), 2, "0");
 
         return "UA-" + account + '-' + property;
     }
@@ -1525,10 +1467,10 @@ public class Chance {
         // Todo: This could return some reserved IPs. See http://vq.io/137dgYy
         // this should probably be updated to account for that rare as it may be
         return String.join(".",
-                random(1, 254) + "",
-                random(0, 255) + "",
-                random(0, 255) + "",
-                random(1, 254) + ""
+                NumberUtils.random(1, 254) + "",
+                NumberUtils.random(0, 255) + "",
+                NumberUtils.random(0, 255) + "",
+                NumberUtils.random(1, 254) + ""
         );
     }
 
@@ -1537,9 +1479,9 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("length", 40);
         defaults.put("casing", "lower");
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         String pool = Constants.HEX_POOL;
-        if (get(options, "casing") == "upper") {
+        if (MapUtils.get(options, "casing") == "upper") {
             pool = Constants.HEX_POOL.toUpperCase();
         }
 
@@ -1557,7 +1499,7 @@ public class Chance {
     }
 
     public String klout() {
-        return String.valueOf(random(1, 99));
+        return String.valueOf(NumberUtils.random(1, 99));
     }
 
     public String mac(Map<String, Object> options) {
@@ -1567,28 +1509,28 @@ public class Chance {
         // this should probably be updated to account for that rare as it may be
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("delimiter", ":");
-        options = initOptions(options, defaults);
-        String delimiter = get(options, "delimiter");
-        return pad(random(0, 255), 2, "") + delimiter +
-                pad(random(0, 255), 2, "") + delimiter +
-                pad(random(0, 255), 2, "") + delimiter +
-                pad(random(0, 255), 2, "") + delimiter +
-                pad(random(0, 255), 2, "") + delimiter +
-                pad(random(0, 255), 2, "") + "";
+        options = MapUtils.initOptions(options, defaults);
+        String delimiter = MapUtils.get(options, "delimiter");
+        return pad(NumberUtils.random(0, 255), 2, "") + delimiter +
+                pad(NumberUtils.random(0, 255), 2, "") + delimiter +
+                pad(NumberUtils.random(0, 255), 2, "") + delimiter +
+                pad(NumberUtils.random(0, 255), 2, "") + delimiter +
+                pad(NumberUtils.random(0, 255), 2, "") + delimiter +
+                pad(NumberUtils.random(0, 255), 2, "") + "";
     }
 
     public String semver(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("include_prerelease", true);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
         var range = pickone(Arrays.asList("^", "~", "<", ">", "<=", ">=", "="));
-        if (get(options, "range") != null) {
-            range = get(options, "range");
+        if (MapUtils.get(options, "range") != null) {
+            range = MapUtils.get(options, "range");
         }
 
         var prerelease = "";
-        if (get(options, "include_prerelease") != null) {
+        if (MapUtils.get(options, "include_prerelease") != null) {
             Object[] arr = new Object[]{"", "-dev", "-beta", "-alpha"};
             int[] weights = {50, 10, 5, 1};
             prerelease = String.valueOf(weighted(arr, weights, false));
@@ -1621,13 +1563,13 @@ public class Chance {
         defaults.put("path", word());
         defaults.put("extensions", new ArrayList<>());
 
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        List<String> extensions = get(options, "extensions");
-        String domain_prefix = get(options, "domain_prefix");
-        String givenDomain = get(options, "domain");
-        String protocol = get(options, "protocol");
-        String path = get(options, "path");
+        List<String> extensions = MapUtils.get(options, "extensions");
+        String domain_prefix = MapUtils.get(options, "domain_prefix");
+        String givenDomain = MapUtils.get(options, "domain");
+        String protocol = MapUtils.get(options, "protocol");
+        String path = MapUtils.get(options, "path");
 //
         var extension = extensions.size() > 0 ? "." + pickone(extensions) : "";
         var domain = !domain_prefix.isBlank() ? domain_prefix + "."
@@ -1637,14 +1579,14 @@ public class Chance {
     }
 
     public int port() {
-        return random(80, 65535);
+        return NumberUtils.random(80, 65535);
     }
 
     public String locale(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("region", false);
-        options = initOptions(options, defaults);
-        if ((boolean) get(options, "region")) {
+        options = MapUtils.initOptions(options, defaults);
+        if ((boolean) MapUtils.get(options, "region")) {
             return pickone((List<?>) data.get("locale_regions"));
         } else {
             return pickone((List<?>) data.get("locale_languages"));
@@ -1654,8 +1596,8 @@ public class Chance {
     public List<String> locales(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("region", false);
-        options = initOptions(options, defaults);
-        if ((boolean) get(options, "region")) {
+        options = MapUtils.initOptions(options, defaults);
+        if ((boolean) MapUtils.get(options, "region")) {
             return (List<String>) data.get("locale_regions");
         } else {
             return (List<String>) data.get("locale_languages");
@@ -1668,20 +1610,20 @@ public class Chance {
         defaults.put("height", 500);
         defaults.put("greyscale", false);
         defaults.put("blurred", false);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        var greyscale = (boolean) get(options, "greyscale") ? "g/" : "";
-        var query = (boolean) get(options, "blurred") ? "/?blur" : "/?random";
+        var greyscale = (boolean) MapUtils.get(options, "greyscale") ? "g/" : "";
+        var query = (boolean) MapUtils.get(options, "blurred") ? "/?blur" : "/?random";
 
-        return "https://picsum.photos/" + greyscale + get(options, "width") + "/" + get(options, "height") + query;
+        return "https://picsum.photos/" + greyscale + MapUtils.get(options, "width") + "/" + MapUtils.get(options, "height") + query;
     }
 
     // -- End Web --
     // -- Location --
 
     public String address(Map<String, Object> options) {
-        options = initOptions(options, new HashMap<>());
-        return random(5, 2000) + " " + street(options);
+        options = MapUtils.initOptions(options, new HashMap<>());
+        return NumberUtils.random(5, 2000) + " " + street(options);
     }
 
     public float altitude(Map<String, Object> options) {
@@ -1689,25 +1631,20 @@ public class Chance {
         defaults.put("fixed", 5);
         defaults.put("min", 0);
         defaults.put("max", 8848);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         return floating(options);
     }
 
     public String areacode(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("parens", true);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         // Don't want area codes to start with 1, or have a 9 as the second digit
         String areacode;
-        if (String.valueOf(get(options, "exampleNumber")) != null) {
-            areacode = "555";
-        } else {
-            areacode = random(2, 9) +
-                    random(0, 8) +
-                    random(0, 9) + "";
-        }
+        MapUtils.get(options, "exampleNumber");
+        areacode = "555";
 
-        return (boolean) get(options, "parens") ? '(' + areacode + ')' : areacode;
+        return (boolean) MapUtils.get(options, "parens") ? '(' + areacode + ')' : areacode;
     }
 
     public String city() {
@@ -1726,10 +1663,10 @@ public class Chance {
 
 
     public Object country(Map<String, Object> options) {
-        options = initOptions(options, new HashMap<>());
+        options = MapUtils.initOptions(options, new HashMap<>());
         Map<String, String> country = pickone(countries());
-        return (boolean) get(options, "raw") ?
-                country : (boolean) get(options, "full") ? country.get("name")
+        return (boolean) MapUtils.get(options, "raw") ?
+                country : (boolean) MapUtils.get(options, "full") ? country.get("name")
                 : country.get("abbreviation");
     }
 
@@ -1739,7 +1676,7 @@ public class Chance {
         defaults.put("fixed", 5);
         defaults.put("min", -10994);
         defaults.put("max", 0);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         return floating(options);
     }
 
@@ -1748,7 +1685,7 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("length", 7);
         defaults.put("pool", "'0123456789bcdefghjkmnpqrstuvwxyz'");
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         return string(options);
     }
 
@@ -1759,17 +1696,16 @@ public class Chance {
 
     public String latitude(Map<String, Object> options) {
         // Constants - Formats
-        String[] formats = {"ddm", "dms", "dd"};
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("min", 0);
         defaults.put("max", 89);
         defaults.put("fixed", 4);
 
-        if (get(options, "format") != null) {
+        if (MapUtils.get(options, "format") != null) {
             defaults.put("format", "");
         }
 
-        String format = get(options, "format");
+        String format = MapUtils.get(options, "format");
         if (!format.isEmpty() && (format.contains("ddm") || format.contains("dms"))) {
             defaults.put("min", 0);
             defaults.put("max", 89);
@@ -1783,27 +1719,27 @@ public class Chance {
 
         }
 
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        format = get(options, "format");
-        int min = get(options, "min");
-        int max = get(options, "max");
-        int fixed = get(options, "fixed");
+        format = MapUtils.get(options, "format");
+        int min = MapUtils.get(options, "min");
+        int max = MapUtils.get(options, "max");
+        int fixed = MapUtils.get(options, "fixed");
 
 
-        if (format == "ddm" || format == "dms") {
-            testRange(min < 0 || min > 89, "Chance: Min specified is out of range. Should be between 0 - 89");
-            testRange(max < 0 || max > 89, "Chance: Max specified is out of range. Should be between 0 - 89");
-            testRange(fixed > 4, "Chance: Fixed specified should be below or equal to 4");
+        if (Objects.equals(format, "ddm") || Objects.equals(format, "dms")) {
+            ErrorUtils.testRange(min < 0 || min > 89, "Chance: Min specified is out of range. Should be between 0 - 89");
+            ErrorUtils.testRange(max < 0 || max > 89, "Chance: Max specified is out of range. Should be between 0 - 89");
+            ErrorUtils.testRange(fixed > 4, "Chance: Fixed specified should be below or equal to 4");
         }
 
         switch (format) {
             case "ddm": {
-                return random(min, max) + "°" + floating(options);
+                return NumberUtils.random(min, max) + "°" + floating(options);
             }
             case "dms": {
-                return random(min, max) + "°" +
-                        random(0, 59) + "’" +
+                return NumberUtils.random(min, max) + "°" +
+                        NumberUtils.random(0, 59) + "’" +
                         floating(0, 59, fixed) + "\"";
             }
             case "dd":
@@ -1821,37 +1757,37 @@ public class Chance {
         defaults.put("fixed", 5);
         defaults.put("format", "dd");
 
-        if (get(options, "format") != null) {
+        if (MapUtils.get(options, "format") != null) {
             defaults.put("format", "");
         }
-        String format = get(options, "format");
+        String format = MapUtils.get(options, "format");
         if (!format.isEmpty() && (format.contains("ddm") || format.contains("dms"))) {
             defaults.put("min", 0);
             defaults.put("max", 179);
             defaults.put("fixed", 4);
         }
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
 
         format = format.toLowerCase();
-        int min = get(options, "min");
-        int max = get(options, "max");
-        int fixed = get(options, "fixed");
+        int min = MapUtils.get(options, "min");
+        int max = MapUtils.get(options, "max");
+        int fixed = MapUtils.get(options, "fixed");
 
-        if (format == "ddm" || format == "dms") {
-            testRange(min < 0 || min > 179, "Chance: Min specified is out of range. Should be between 0 - 179");
-            testRange(max < 0 || max > 179, "Chance: Max specified is out of range. Should be between 0 - 179");
-            testRange(fixed > 4, "Chance: Fixed specified should be below or equal to 4");
+        if (format.equals("ddm") || format.equals("dms")) {
+            ErrorUtils.testRange(min < 0 || min > 179, "Chance: Min specified is out of range. Should be between 0 - 179");
+            ErrorUtils.testRange(max < 0 || max > 179, "Chance: Max specified is out of range. Should be between 0 - 179");
+            ErrorUtils.testRange(fixed > 4, "Chance: Fixed specified should be below or equal to 4");
         }
 
         switch (format) {
             case "ddm": {
-                return random(min, max) + "°" +
+                return NumberUtils.random(min, max) + "°" +
                         floating(0, 59.9999f, fixed);
             }
             case "dms": {
-                return random(min, max) + "°" +
-                        random(0, 59) + "’" +
+                return NumberUtils.random(min, max) + "°" +
+                        NumberUtils.random(0, 59) + "’" +
                         floating(0, 59.9999f, fixed) + "”";
             }
             case "dd":
@@ -1904,9 +1840,9 @@ public class Chance {
     public List<Map<String, Object>> counties(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("country", "uk");
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         Map<String, List<Map<String, Object>>> picked = counties();
-        return picked.get(get(options, "country"));
+        return picked.get(MapUtils.get(options, "country"));
     }
 
     public <T> T provinces() {
@@ -1921,21 +1857,21 @@ public class Chance {
     public List<Map<String, Object>> provinces(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("country", "ca");
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         Map<String, List<Map<String, Object>>> picked = provinces();
-        return picked.get(get(options, "country"));
+        return picked.get(MapUtils.get(options, "country"));
     }
 
     public String province(Map<String, Object> options) {
         Map<String, String> picked = pickone(provinces(options));
-        return (options != null && get(options, "full") != null) ?
+        return (options != null && MapUtils.get(options, "full") != null) ?
                 picked.get("name") :
                 picked.get("abbreviation");
     }
 
     public String state(Map<String, Object> options) {
         Map<String, String> picked = pickone(states(options));
-        return (options != null && get(options, "full") != null) ?
+        return (options != null && MapUtils.get(options, "full") != null) ?
                 picked.get("name") :
                 picked.get("abbreviation");
     }
@@ -1960,28 +1896,28 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("country", "us");
         defaults.put("us_states_and_dc", true);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
         List<Map<String, Object>> states = new ArrayList<>();
 
-        switch (get(options, "country").toString().toLowerCase()) {
+        switch (MapUtils.get(options, "country").toString().toLowerCase()) {
             case "us":
                 states = new ArrayList<>();
 
-                if ((boolean) get(options, "us_states_and_dc")) {
+                if ((boolean) MapUtils.get(options, "us_states_and_dc")) {
                     states.add(us_states_and_dc());
                 }
-                if (get(options, "territories") != null) {
+                if (MapUtils.get(options, "territories") != null) {
                     states.add(territories());
                 }
-                if (get(options, "armed_forces") != null) {
+                if (MapUtils.get(options, "armed_forces") != null) {
                     states.add(armed_forces());
                 }
                 break;
             case "it":
             case "mx":
                 Map<String, List<Map<String, Object>>> cr = country_regions();
-                states.add((Map<String, Object>) cr.get(get(options, "country")));
+                states.add((Map<String, Object>) cr.get(MapUtils.get(options, "country")));
                 break;
             case "uk":
                 states = counties(null);
@@ -1996,11 +1932,11 @@ public class Chance {
         defaults.put("country", "us");
         defaults.put("syllables", 2);
         defaults.put("short_suffix", false);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         String streetName = capitalize(word(options));
         Map<String, Object> streetCountry = (Map<String, Object>) street_suffix(options);
         String suffix = (String) streetCountry.get("name");
-        if ((boolean) get(options, "short_suffix")) {
+        if ((boolean) MapUtils.get(options, "short_suffix")) {
             suffix = (String) streetCountry.get("abbreviation");
         }
         return suffix + " " + streetName;
@@ -2009,9 +1945,9 @@ public class Chance {
     public Object street_suffix(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("country", "us");
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         Map<String, List<String>> map = street_suffixes();
-        List<String> street_suffixes = map.get(get(options, "country"));
+        List<String> street_suffixes = map.get(MapUtils.get(options, "country"));
         return pickone(street_suffixes);
     }
 
@@ -2031,7 +1967,7 @@ public class Chance {
         List<String> zip = ((List<Integer>) n(fn, 5))
                 .stream().map(String::valueOf).collect(Collectors.toList());
 
-        if (options != null && (boolean) get(options, "plusfour")) {
+        if (options != null && (boolean) MapUtils.get(options, "plusfour")) {
             zip.add("-");
             List<String> plusfour = ((List<Integer>) n(fn, 4))
                     .stream().map(String::valueOf).collect(Collectors.toList());
@@ -2049,58 +1985,58 @@ public class Chance {
     }
 
     public <T> T date(Map<String, Object> options) {
-        String date_string = "";
+        String date_string;
         LocalDateTime date;
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("string", false);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         // If interval is specified we ignore preset
-        if (options != null && (get(options, "min") != null || get(options, "max") != null)) {
+        if (MapUtils.get(options, "min") != null || MapUtils.get(options, "max") != null) {
             defaults.put("american", true);
             defaults.put("string", false);
-            options = initOptions(options, defaults);
-            long min = get(options, "min") != null ? ((Date) get(options, "minDate")).getTime() : 1;
-            long max = get(options, "max") != null ? ((Date) get(options, "maxDate")).getTime() : 8640000000000000L;
+            options = MapUtils.initOptions(options, defaults);
+            long min = MapUtils.get(options, "min") != null ? ((Date) MapUtils.get(options, "minDate")).getTime() : 1;
+            long max = MapUtils.get(options, "max") != null ? ((Date) MapUtils.get(options, "maxDate")).getTime() : 8640000000000000L;
 
-            date = LocalDateTime.ofInstant(Instant.ofEpochSecond(random(min, max)), ZoneOffset.UTC);
+            date = LocalDateTime.ofInstant(Instant.ofEpochSecond(NumberUtils.random(min, max)), ZoneOffset.UTC);
         } else {
             options.put("raw", true);
             Map<String, Object> m = month(options);
 
             int daysInMonth = (int) (double) m.get("days");
 
-            if (options != null && get(options, "month") != null) {
+            if (MapUtils.get(options, "month") != null) {
                 // Mod 12 to allow months outside range of 0-11 (not encouraged, but also not prevented).
                 Map map = months();
-                m = (Map<String, Object>) map.get((((int) get(options, "month") % 12) + 12) % 12);
+                m = (Map<String, Object>) map.get((((int) MapUtils.get(options, "month") % 12) + 12) % 12);
                 daysInMonth = Integer.parseInt(String.valueOf(m.get("days")));
             }
             defaults.put("year", year(null));
             defaults.put("month", Integer.parseInt(String.valueOf(m.get("numeric"))));
-            defaults.put("day", random(1, daysInMonth));
+            defaults.put("day", NumberUtils.random(1, daysInMonth));
             Map<String, Object> hourOptions = new HashMap<>();
             hourOptions.put("twentyfour", true);
             defaults.put("hour", hour(hourOptions));
             defaults.put("minute", minute());
-            defaults.put("second", random(1, daysInMonth));
-            defaults.put("millisecond", random(1, daysInMonth));
+            defaults.put("second", NumberUtils.random(1, daysInMonth));
+            defaults.put("millisecond", NumberUtils.random(1, daysInMonth));
             defaults.put("american", true);
             defaults.put("string", false);
 
-            options = initOptions(options, defaults);
+            options = MapUtils.initOptions(options, defaults);
 
             date = LocalDateTime.of(
-                    get(options, "year"),
-                    (int) get(options, "month"),
-                    get(options, "day"),
-                    get(options, "hour"),
-                    get(options, "minute"),
-                    get(options, "second"),
-                    get(options, "millisecond")
+                    MapUtils.get(options, "year"),
+                    (int) MapUtils.get(options, "month"),
+                    MapUtils.get(options, "day"),
+                    MapUtils.get(options, "hour"),
+                    MapUtils.get(options, "minute"),
+                    MapUtils.get(options, "second"),
+                    MapUtils.get(options, "millisecond")
             );
         }
 
-        if (get(options, "american") != null) {
+        if (MapUtils.get(options, "american") != null) {
             // Adding 1 to the month is necessary because Date() 0-indexes
             // months but not day for some odd reason.
             date_string = (date.getMonthValue() + 1) + "/" + date.getDayOfMonth() + "/" + date.getYear();
@@ -2108,27 +2044,27 @@ public class Chance {
             date_string = date.getDayOfMonth() + "/" + (date.getDayOfMonth() + 1) + "/" + date.getYear();
         }
 
-        return (boolean) get(options, "string") ? (T) date_string : (T) date;
+        return (boolean) MapUtils.get(options, "string") ? (T) date_string : (T) date;
     }
 
     public int hour(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         boolean twentyfour = false;
-        if (isExist(defaults, "twentyfour")) {
-            twentyfour = get(options, "twentyfour");
+        if (MapUtils.isExist(defaults, "twentyfour")) {
+            twentyfour = MapUtils.get(options, "twentyfour");
         }
         defaults.put("min", twentyfour ? 0 : 1);
         defaults.put("max", twentyfour ? 23 : 12);
-        options = initOptions(options, defaults);
-        int min = get(options, "min");
-        int max = get(options, "max");
+        options = MapUtils.initOptions(options, defaults);
+        int min = MapUtils.get(options, "min");
+        int max = MapUtils.get(options, "max");
 
-        testRange(min < 0, "Chance: Min cannot be less than 0.");
-        testRange(twentyfour && max > 23, "Chance: Max cannot be greater than 23 for twentyfour option.");
-        testRange(!twentyfour && max > 12, "Chance: Max cannot be greater than 12.");
-        testRange(min > max, "Chance: Min cannot be greater than Max.");
+        ErrorUtils.testRange(min < 0, "Chance: Min cannot be less than 0.");
+        ErrorUtils.testRange(twentyfour && max > 23, "Chance: Max cannot be greater than 23 for twentyfour option.");
+        ErrorUtils.testRange(!twentyfour && max > 12, "Chance: Max cannot be greater than 12.");
+        ErrorUtils.testRange(min > max, "Chance: Min cannot be greater than Max.");
 
-        return random(min, max);
+        return NumberUtils.random(min, max);
     }
 
     public long timestamp(Map<String, Object> options) {
@@ -2139,10 +2075,10 @@ public class Chance {
     public String weekday(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("weekday_only", false);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         String[] days = new String[]{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday"};
         List<String> weekdays = new ArrayList(List.of(days));
-        if (!(boolean) get(options, "weekday_only")) {
+        if (!(boolean) MapUtils.get(options, "weekday_only")) {
             weekdays.add("Saturday");
             weekdays.add("Sunday");
         }
@@ -2153,41 +2089,41 @@ public class Chance {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("min", LocalDateTime.now().getYear());
         // Default to current year as min if none specified
-        options = initOptions(options, defaults);
-        int min = get(options, "min");
+        options = MapUtils.initOptions(options, defaults);
+        int min = MapUtils.get(options, "min");
         // Default to one century after current year as max if none specified
         int max = min + 100;
-        if (get(options, "max") != null) {
-            max = get(options, "max");
+        if (MapUtils.get(options, "max") != null) {
+            max = MapUtils.get(options, "max");
         }
 
         return natural(min, max);
     }
 
     public int second() {
-        return random(0, 59);
+        return NumberUtils.random(0, 59);
     }
 
     public int minute(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("min", 0);
         defaults.put("max", 59);
-        options = initOptions(options, defaults);
-        int min = get(options, "min");
-        int max = get(options, "min");
-        testRange(min < 1, "Chance: Min cannot be less than 1.");
-        testRange(max > 12, "Chance: Max cannot be greater than 12.");
-        testRange(min > max, "Chance: Min cannot be greater than Max.");
+        options = MapUtils.initOptions(options, defaults);
+        int min = MapUtils.get(options, "min");
+        int max = MapUtils.get(options, "min");
+        ErrorUtils.testRange(min < 1, "Chance: Min cannot be less than 1.");
+        ErrorUtils.testRange(max > 12, "Chance: Max cannot be greater than 12.");
+        ErrorUtils.testRange(min > max, "Chance: Min cannot be greater than Max.");
 
-        return random(min, max);
+        return NumberUtils.random(min, max);
     }
 
     public int minute() {
-        return random(0, 59);
+        return NumberUtils.random(0, 59);
     }
 
     public int millisecond() {
-        return random(0, 999);
+        return NumberUtils.random(0, 999);
     }
 
     public <T> T month(Map<String, Object> options) {
@@ -2195,16 +2131,16 @@ public class Chance {
         defaults.put("min", 1);
         defaults.put("max", 12);
         defaults.put("raw", false);
-        options = initOptions(options, defaults);
-        int min = get(options, "min");
-        int max = get(options, "max");
+        options = MapUtils.initOptions(options, defaults);
+        int min = MapUtils.get(options, "min");
+        int max = MapUtils.get(options, "max");
 
-        testRange(min < 1, "Chance: Min cannot be less than 1.");
-        testRange(max > 12, "Chance: Max cannot be greater than 12.");
-        testRange(min > max, "Chance: Min cannot be greater than Max.");
+        ErrorUtils.testRange(min < 1, "Chance: Min cannot be less than 1.");
+        ErrorUtils.testRange(max > 12, "Chance: Max cannot be greater than 12.");
+        ErrorUtils.testRange(min > max, "Chance: Min cannot be greater than Max.");
         List<Map<String, String>> months = months();
         Map<String, Object> month = pickone(months.subList(min - 1, max));
-        return (boolean) get(options, "raw") ? (T) month : (T) month.get("name");
+        return (boolean) MapUtils.get(options, "raw") ? (T) month : (T) month.get("name");
     }
 
     long hammertime(Map<String, Object> options) {
@@ -2217,17 +2153,16 @@ public class Chance {
 
     public String cc(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        Map<String, Object> type = null;
-        List<String> number = new ArrayList<>();
-        int to_generate = 0;
+        Map<String, Object> type;
+        int to_generate;
 
-        type = (get(options, "type") != null) ?
-                cc_type((String) get(options, "type"), true) :
+        type = (MapUtils.get(options, "type") != null) ?
+                cc_type((String) MapUtils.get(options, "type"), true) :
                 cc_type(null, true);
 
-        number.addAll(Arrays.asList(String.valueOf(type.get("prefix")).split("")));
+        List<String> number = new ArrayList<>(Arrays.asList(String.valueOf(type.get("prefix")).split("")));
         to_generate = (int) type.get("length")
                 - String.valueOf(type.get("prefix")).length() - 1;
 
@@ -2255,7 +2190,7 @@ public class Chance {
         int digit;
 
         for (int i = 0, l = digits.size(); l > i; ++i) {
-            digit = +Integer.parseInt(digits.get(i));
+            digit = Integer.parseInt(digits.get(i));
             if (i % 2 == 0) {
                 digit *= 2;
                 if (digit > 9) {
@@ -2277,15 +2212,15 @@ public class Chance {
         Map<String, Object> type = null;
 
         if (name != null) {
-            for (var i = 0; i < types.size(); i++) {
+            for (Map<String, Object> stringObjectMap : types) {
                 // Accept either name or short_name to specify card type
-                if (types.get(i).get("name") == name
-                        || types.get(i).get("short_name") == name) {
-                    type = types.get(i);
+                if (stringObjectMap.get("name") == name
+                        || stringObjectMap.get("short_name") == name) {
+                    type = stringObjectMap;
                     break;
                 }
             }
-            testRange(type == null, "Chance: Credit card type '" + name + "' is not supported");
+            ErrorUtils.testRange(type == null, "Chance: Credit card type '" + name + "' is not supported");
 
         } else {
             type = pickone(types);
@@ -2334,29 +2269,20 @@ public class Chance {
 //         }
         return null;
     }
-
-    public class MyClass<T> {
-        private Map<String, T> map;
-
-        public T getObject(final String key) {
-            return map.get(key);
-        }
-    }
-
-    public String dollar(Map<String, Object> options) {
+     public String dollar(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("max", 10000);
         defaults.put("min", 0);
         // By default, a somewhat more sane max for dollar than all available numbers
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        String dollar = String.valueOf(floating(get(options, "min"), get(options, "max"), 2));
+        String dollar = String.valueOf(floating(MapUtils.get(options, "min"), MapUtils.get(options, "max"), 2));
 
 
         if (dollar.contains("\\.")) {
             dollar += ".00";
         }
-        String cents = dollar.split(".")[1];
+        String cents = dollar.split("\\.")[1];
         if (cents.length() < 2) {
             dollar = dollar + '0';
         }
@@ -2374,7 +2300,8 @@ public class Chance {
 
     public <T> T exp(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        options = initOptions(options, defaults);
+        defaults.put("exp", LocalDateTime.now().getYear()+5);
+        options = MapUtils.initOptions(options, defaults);
         Map<String, Object> exp = new HashMap<>();
 
         int exp_year = exp_year();
@@ -2382,13 +2309,13 @@ public class Chance {
 
         // If the year is this year, need to ensure month is greater than the
         // current month or this expiration will not be valid
-        if ((int) exp.get("year") == (LocalDateTime.now().getYear())) {
+        if (Objects.equals(exp.get("year"),LocalDateTime.now().getYear())) {
             exp_month = exp_month(true);
         }
         defaults.put("month", exp_month);
         defaults.put("year", exp_year);
 
-        return (boolean) get(options, "raw") ? (T) exp : (T) (exp_month + "/" + exp_year);
+        return (boolean) MapUtils.get(options, "raw") ? (T) exp : (T) (exp_month + "/" + exp_year);
     }
 
     public int exp_month(boolean future) {
@@ -2399,12 +2326,12 @@ public class Chance {
 
     public int exp_month(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         int month, month_int;
         // Date object months are 0 indexed
         int curMonth = LocalDateTime.now().getMonthValue() + 1;
 
-        if ((boolean) get(options, "future") && (curMonth != 12)) {
+        if ((boolean) MapUtils.get(options, "future") && (curMonth != 12)) {
             do {
                 month = Integer.parseInt(((Map<String, String>) month(options)).get("numeric"));
                 month_int = month;
@@ -2429,9 +2356,8 @@ public class Chance {
     }
 
     public String vat(Map<String, Object> options) {
-        switch (get(options, "country").toString().toLowerCase()) {
-            case "it":
-                return it_vat();
+        if ("it".equalsIgnoreCase(MapUtils.get(options, "country").toString())) {
+            return it_vat();
         }
         return null;
     }
@@ -2453,11 +2379,10 @@ public class Chance {
     public String iban() {
         String alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         String alphanum = alpha + "0123456789";
-        String iban = string(alpha, 2)
+        return string(alpha, 2)
                 + pad(integer(0, 99), 2, "")
                 + string(alphanum, 4)
                 + pad(natural(9), natural(6, 26), "");
-        return iban;
     }
     // -- End Finance
 
@@ -2505,14 +2430,14 @@ public class Chance {
     public String cf(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
 
-        options = initOptions(options, defaults);
-        String gender = get(options, "gender") != null ? (String) get(options, "gender") : gender(options);
+        options = MapUtils.initOptions(options, defaults);
+        String gender = MapUtils.get(options, "gender") != null ? (String) MapUtils.get(options, "gender") : gender(options);
         options.put("gender", gender);
         options.put("nationality", "it");
-        String first = get(options, "first") != null ? (String) get(options, "first") : first(options);
-        String last = get(options, "last") != null ? (String) get(options, "last") : last(options);
-        LocalDateTime birthday = get(options, "birthday") != null ? (LocalDateTime) get(options, "birthday") : birthday(options);
-        String city = get(options, "city") != null ? (String) get(options, "city") : pickone(Arrays.asList('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'Z'))
+        String first = MapUtils.get(options, "first") != null ? (String) MapUtils.get(options, "first") : first(options);
+        String last = MapUtils.get(options, "last") != null ? (String) MapUtils.get(options, "last") : last(options);
+        LocalDateTime birthday = MapUtils.get(options, "birthday") != null ? (LocalDateTime) MapUtils.get(options, "birthday") : birthday(options);
+        String city = MapUtils.get(options, "city") != null ? (String) MapUtils.get(options, "city") : pickone(Arrays.asList('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'Z'))
                 + pad(natural(999), 3, "");
         List<String> cf = new ArrayList<>();
 
@@ -2537,7 +2462,7 @@ public class Chance {
             return_value = return_value.subList(0, 3);
         } else {
             temp = Arrays.stream(name.toUpperCase().split(""))
-                    .map((c) -> ("BCDFGHJKLMNPRSTVWZ".indexOf(c) != -1) ? c : null)
+                    .map((c) -> ("BCDFGHJKLMNPRSTVWZ".contains(c)) ? c : null)
                     .collect(Collectors.joining(""));
             if (temp.length() > 3) {
                 if (isLast) {
@@ -2549,7 +2474,7 @@ public class Chance {
             if (temp.length() < 3) {
                 return_value = Collections.singletonList(temp);
                 temp = Arrays.stream(name.toUpperCase().split(""))
-                        .map((c) -> ("AEIOU".indexOf(c) != -1) ? c : null)
+                        .map((c) -> ("AEIOU".contains(c)) ? c : null)
                         .collect(Collectors.joining("")).substring(0, 3 - return_value.size());
             }
             return_value = Collections.singletonList(return_value + temp);
@@ -2563,7 +2488,7 @@ public class Chance {
 
         return String.valueOf(birthday.getYear()).substring(2) +
                 lettermonths[birthday.getMonthValue()] +
-                pad(birthday.getDayOfMonth() + ((gender.toLowerCase() == "female") ? 40 : 0), 2, "");
+                pad(birthday.getDayOfMonth() + ((gender.toLowerCase().equals("female")) ? 40 : 0), 2, "");
     }
 
     String checkdigit_generator(String cf) {
@@ -2645,7 +2570,7 @@ public class Chance {
         // sharps - just sharp notes
         // naturals - just natural notes
         // all - naturals, sharps and flats
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         Map<String, Object> scales = new HashMap<>();
         List<String> naturals = List.of("C", "D", "E", "F", "G", "A", "B");
         List<String> flats = List.of("D♭", "E♭", "G♭", "A♭", "B♭");
@@ -2665,7 +2590,7 @@ public class Chance {
         scales.put("all", all);
         scales.put("flatKey", flatKey);
         scales.put("sharpKey", sharpKey);
-        List<String> notes = (List<String>) scales.get(get(options, "notes"));
+        List<String> notes = (List<String>) scales.get(MapUtils.get(options, "notes"));
         return pickone(notes);
     }
 
@@ -2675,18 +2600,18 @@ public class Chance {
         defaults.put("min", 0);
         defaults.put("max", 127);
 
-        options = initOptions(options, defaults);
-        int min = get(options, "min");
-        int max = get(options, "max");
+        options = MapUtils.initOptions(options, defaults);
+        int min = MapUtils.get(options, "min");
+        int max = MapUtils.get(options, "max");
         return integer(min, max);
     }
 
     public String chord_quality(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("jazz", true);
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         List<String> chord_qualities = List.of("maj", "min", "aug", "dim");
-        if ((boolean) get(options, "jazz")) {
+        if ((boolean) MapUtils.get(options, "jazz")) {
             chord_qualities = List.of(
                     "maj7",
                     "min7",
@@ -2700,7 +2625,7 @@ public class Chance {
     }
 
     public String chord(Map<String, Object> options) {
-        options = initOptions(options, new HashMap<>());
+        options = MapUtils.initOptions(options, new HashMap<>());
         return note(options) + chord_quality(options);
     }
 
@@ -2709,9 +2634,9 @@ public class Chance {
         defaults.put("min", 40);
         defaults.put("max", 320);
 
-        options = initOptions(options, defaults);
-        int min = get(options, "min");
-        int max = get(options, "max");
+        options = MapUtils.initOptions(options, defaults);
+        int min = MapUtils.get(options, "min");
+        int max = MapUtils.get(options, "max");
         return integer(min, max);
     }
     // -- End Music
@@ -2724,16 +2649,16 @@ public class Chance {
 
     public <T> T rpg(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
-        options = initOptions(options, defaults);
-        testRange(get(options, "thrown") == null, "Chance: A type of die roll must be included");
-        String[] bits = ((String) get(options, "thrown")).toLowerCase().split("d");
+        options = MapUtils.initOptions(options, defaults);
+        ErrorUtils.testRange(MapUtils.get(options, "thrown") == null, "Chance: A type of die roll must be included");
+        String[] bits = ((String) MapUtils.get(options, "thrown")).toLowerCase().split("d");
         Map<Integer, Integer> rolls = new HashMap<>();
 //
-        testRange(bits.length != 2 || !isNumeric(bits[0]) || !isNumeric(bits[1]), "Chance: Invalid format provided. Please provide #d# where the first # is the number of dice to roll, the second # is the max of each die");
+        ErrorUtils.testRange(bits.length != 2 || !NumberUtils.isNumeric(bits[0]) || !NumberUtils.isNumeric(bits[1]), "Chance: Invalid format provided. Please provide #d# where the first # is the number of dice to roll, the second # is the max of each die");
         for (int i = Integer.parseInt(bits[0]); i > 0; i--) {
             rolls.put(i - 1, natural(1, Integer.parseInt(bits[1])));
         }
-        if (get(options, "sum") != null && (boolean) get(options, "sum")) {
+        if (MapUtils.get(options, "sum") != null && (boolean) MapUtils.get(options, "sum")) {
             return (T) rolls.values().parallelStream().reduce(0, Integer::sum);
         }
         return (T) rolls;
@@ -2742,7 +2667,7 @@ public class Chance {
     public boolean luhn_check(int num) {
         String str = num + "";
         var checkDigit = str.substring(str.length() - 1);
-        return checkDigit == luhn_calculate(str.substring(0, str.length() - 1));
+        return checkDigit.equals(luhn_calculate(str.substring(0, str.length() - 1)));
     }
 
     public <T> T fileExtension() {
@@ -2753,54 +2678,49 @@ public class Chance {
         return abc.getClass().isArray();
     }
 
-    public String checkObject(Object abc) {
-        return abc.getClass().getConstructors()[0].toString();
-    }
-
     public String file(Map<String, Object> options) {
-        Map<String, Object> fileOptions = initOptions(options, new HashMap<>());
+        Map<String, Object> fileOptions = MapUtils.initOptions(options, new HashMap<>());
         Map<String, List<String>> fileExtensions = fileExtension();
         Set<String> typeRange = fileExtensions.keySet();//['raster', 'vector', '3d', 'document'];
 
         String fileExtension;
 //        // Generate random file name
-//        System.out.println(fileOptions);
         String fileName = word(fileOptions);
 //
 //        // Generate file by specific extension provided by the user
-        if (isExist(options, "extension")) {//
-            fileExtension = get(options, "extension");
+        if (MapUtils.isExist(options, "extension")) {//
+            fileExtension = MapUtils.get(options, "extension");
             return (fileName + '.' + fileExtension);
         }
 
         // Generate file by specific extension collection
-        if (isExist(options, "extension")) {
-            if (checkArray(get(options, "extension"))) {
+        if (MapUtils.isExist(options, "extension")) {
+            if (checkArray(MapUtils.get(options, "extension"))) {
 
-                fileExtension = pickone(List.of(get(options, "extension")));
+                fileExtension = pickone(List.of(MapUtils.get(options, "extension")));
                 return (fileName + '.' + fileExtension);
-            } else if (get(options, "extension") instanceof String) {
+            } else if (MapUtils.get(options, "extension") instanceof String) {
 
-                Map<String, List<String>> extensionObjectCollection = get(options, "extension");
+                Map<String, List<String>> extensionObjectCollection = MapUtils.get(options, "extension");
                 List<String> keys = new ArrayList<>(extensionObjectCollection.keySet());
                 fileExtension = pickone(extensionObjectCollection.get(pickone(keys)));
                 return (fileName + '.' + fileExtension);
             }
-            testRange(true, "Chance: Extensions must be an Array or Object");
+            ErrorUtils.testRange(true, "Chance: Extensions must be an Array or Object");
 
         }
 
         // Generate file extension based on specific file type
-        if (isExist(options, "fileType")) {
+        if (MapUtils.isExist(options, "fileType")) {
 
-            String fileType = get(options, "fileType");
-            if (new ArrayList<>(typeRange).indexOf(fileType) != -1) {
+            String fileType = MapUtils.get(options, "fileType");
+            if (new ArrayList<>(typeRange).contains(fileType)) {
 
                 fileExtension = pickone(fileExtensions.get(fileType));
                 return (fileName + '.' + fileExtension);
             }
 
-            testRange(true, "Chance: Expect file type value to be 'raster', 'vector', '3d' or 'document'");
+            ErrorUtils.testRange(true, "Chance: Expect file type value to be 'raster', 'vector', '3d' or 'document'");
         }
 
         // Generate random file name if no extension options are passed
@@ -2815,15 +2735,15 @@ public class Chance {
         // however they can also be separated by "-"
         // the network variant uses a dot every fourth byte
         Map<String, Object> defaults = new HashMap<>();
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
         String separator = "";
-        if (!isExist(options, "separator")) {
-            separator = get(options, "networkVersion") ? "." : ":";
+        if (!MapUtils.isExist(options, "separator")) {
+            separator = MapUtils.get(options, "networkVersion") ? "." : ":";
         }
 
         String mac_pool = "ABCDEF1234567890";
         String mac = "";
-        if (!isExist(options, "networkVersion")) {
+        if (!MapUtils.isExist(options, "networkVersion")) {
             Supplier fn = () -> string(mac_pool, 2);
             List<String> macs = n(fn, 6);
             mac = String.join(separator, macs);
@@ -2836,50 +2756,44 @@ public class Chance {
         return mac;
     }
 
-    public <T> T get(Map<String, Object> options, String key) {
-        return (T) options.get(key);
-    }
 
-    public boolean isExist(Map<String, Object> options, String key) {
-        return options.get(key) != null;
-    }
 
     public int normal(Map<String, Object> options) {
         Map<String, Object> defaults = new HashMap<>();
         options.put("mean", 0);
         options.put("dev", 1);
         options.put("pool", new ArrayList<>());
-        options = initOptions(options, defaults);
+        options = MapUtils.initOptions(options, defaults);
 
-        testRange(
-                isExist(options, "pool"),
+        ErrorUtils.testRange(
+                MapUtils.isExist(options, "pool"),
                 "Chance: The pool option must be a valid array."
         );
-        testRange(
-                !isNumeric(get(options, "mean")),
+        ErrorUtils.testRange(
+                NumberUtils.isNumeric(MapUtils.get(options, "mean")),
                 "Chance: Mean (mean) must be a number"
         );
-        testRange(
-                !isNumeric(get(options, "dev")),
+        ErrorUtils.testRange(
+                NumberUtils.isNumeric(MapUtils.get(options, "dev")),
                 "Chance: Standard deviation (dev) must be a number"
         );
 
         // If a pool has been passed, then we are returning an item from that pool,
         // using the normal distribution settings that were passed in
-        String pool = get(options, "pool");
+        String pool = MapUtils.get(options, "pool");
         if (pool.length() > 0) {
             return normal_pool(options);
         }
 
         // The Marsaglia Polar method
         int s, u, v, norm;
-        int mean = get(options, "mean");
-        int dev = get(options, "dev");
+        int mean = MapUtils.get(options, "mean");
+        int dev = MapUtils.get(options, "dev");
 
         do {
             // U and V are from the uniform distribution on (-1, 1)
-            u = random() * 2 - 1;
-            v = random() * 2 - 1;
+            u = NumberUtils.random() * 2 - 1;
+            v = NumberUtils.random() * 2 - 1;
 
             s = u * u + v * v;
         } while (s >= 1);
@@ -2894,12 +2808,12 @@ public class Chance {
     public int normal_pool(Map<String, Object> options) {
         int performanceCounter = 0;
         Map<String, Object> defaults = new HashMap<>();
-        options.put("mean", get(options, "mean"));
-        options.put("dev", get(options, "dev"));
+        options.put("mean", MapUtils.get(options, "mean"));
+        options.put("dev", MapUtils.get(options, "dev"));
         do {
             var idx = Math.round(normal(options));
 
-            String pool = get(options, "pool");
+            String pool = MapUtils.get(options, "pool");
             int len = pool.length();
             if (idx < len && idx >= 0) {
                 return pool.charAt(idx);
@@ -2908,7 +2822,7 @@ public class Chance {
             }
         } while (performanceCounter < 100);
 
-        testRange(true, "Chance: Your pool is too small for the given mean and standard deviation. Please adjust.");
+        ErrorUtils.testRange(true, "Chance: Your pool is too small for the given mean and standard deviation. Please adjust.");
         return 0;
     }
 
@@ -2916,9 +2830,9 @@ public class Chance {
         // Initial Letter (Typically Designated by Side of Mississippi River)
         Map<String, Object> defaults = new HashMap<>();
         defaults.put("side", "?");
-        options = initOptions(options, defaults);
-        String fl = "";
-        switch (((String) get(options, "side")).toLowerCase()) {
+        options = MapUtils.initOptions(options, defaults);
+        String fl;
+        switch (((String) MapUtils.get(options, "side")).toLowerCase()) {
             case "east":
             case "e":
                 fl = "W";

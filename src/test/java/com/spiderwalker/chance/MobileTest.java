@@ -1,28 +1,29 @@
 package com.spiderwalker.chance;
 
 
-import com.spiderwalker.chance.constant.Constants;
-import com.spiderwalker.chance.exception.RangeError;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class MobileTest {
 
     @Test
-    public void shouldLoadFile() {
+    public void shouldReturnRandomPhoneNumberWithCountryCode() {
         Map<String, Object> options = new HashMap<>();
 
         Mobile chance = new Mobile();
         String rs= chance.phone(options);
-        assertTrue(rs.isEmpty());
+        assertFalse(rs.isEmpty());
 
+    }
+    @Test
+    void shouldReturnRandomPhoneNumber(){
+        Map<String, Object> options = new HashMap<>();
+        Mobile chance = new Mobile();
+        String rs= chance.phone(options);
+        assertFalse(rs.isEmpty());
     }
 }
