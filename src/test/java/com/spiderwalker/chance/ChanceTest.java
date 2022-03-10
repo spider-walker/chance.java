@@ -207,12 +207,12 @@ public class ChanceTest {
         Object[] array1 = {1, 4, 5};
         int[] weights1 = {1, 4};
 
-        assertThrows(RangeError.class, () -> chance.weighted(array1, weights1, true));
+        assertThrows(RangeError.class, () -> chance.weighted(array1, weights1));
 
         Object[] array2 = {1, 4, 5, 8, 5, 6};
         int[] weights2 = {1, 1, 1, 1, 1, 2};
 
-        chance.weighted(array2, weights2, true);
+        chance.weighted(array2, weights2);
     }
 
     @Test
@@ -410,6 +410,12 @@ public class ChanceTest {
     }
 
     @Test
+    public void shouldCapitalizeEach() {
+        Chance chance = Chance.getInstance();
+        assertEquals("Milk Way", chance.capitalizeEach("milk way"));
+    }
+
+    @Test
     public void shouldReturnString() {
         Chance chance = Chance.getInstance();
         assertNotNull(chance.string(null));
@@ -449,6 +455,13 @@ public class ChanceTest {
         Map<String, Object> options = new HashMap<>();
         Chance chance = Chance.getInstance();
         assertNotNull(chance.birthday(options));
+    }
+
+    @Test
+    public void shouldReturnCpf() {
+        Map<String, Object> options = new HashMap<>();
+        Chance chance = Chance.getInstance();
+        assertNotNull(chance.cpf(options));
     }
 
     @Test
@@ -555,7 +568,6 @@ public class ChanceTest {
 
     @Test
     public void shouldReturnFbid() {
-        Map<String, Object> options = new HashMap<>();
         Chance chance = Chance.getInstance();
         assertNotNull(chance.fbid());
     }
