@@ -1,0 +1,22 @@
+name: This is a huge Test
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  runs-on: ubuntu-latest
+  name: This is a huge test
+  descriptions: This is a huge test
+
+  steps:
+    - name: Test A
+      shell: bash
+      run: |
+        echo "Test A"
+    - name: Test B
+      shell: bash
+      run: |
+        echo "Test B"    
